@@ -14,10 +14,13 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      # TCP, not the Unix socket: on first boot the image runs a socket-only temporary server
+      # for initialisation and then restarts, so a socket check can pass too early.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 3s
       retries: 30
+      start_period: 10s
 
   # Throwaway database for integration tests (`pnpm db:test:up`). Data lives in tmpfs.
   db-test:
@@ -32,10 +35,11 @@ services:
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testimonial -d testimonial_test"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U testimonial -d testimonial_test"]
       interval: 2s
       timeout: 3s
       retries: 30
+      start_period: 10s
 
   api:
     build: .

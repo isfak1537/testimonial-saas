@@ -11,6 +11,7 @@ apps/api/src/generated/
 
 # Confidential requirements drafts — keep out of Git until repository privacy is confirmed
 docs/requirements/*.docx
+docs/requirements/**/*.docx
 
 # Test artifacts
 coverage/
