@@ -71,6 +71,7 @@ jobs:
           echo "pnpm expected $expected, got $actual"
           [ "$actual" = "$expected" ]
       - run: pnpm install --frozen-lockfile
+      # `pnpm verify` starts the throwaway test database itself (pnpm db:test:up).
       - run: pnpm verify
 
   e2e:
@@ -83,6 +84,20 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.64.1-noble
     env:
       HOME: /root
+      # The job runs inside a container, so the database service is reached by its name.
+      DATABASE_URL: postgresql://testimonial:testimonial_ci@postgres:5432/testimonial
+    services:
+      postgres:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_USER: testimonial
+          POSTGRES_PASSWORD: testimonial_ci
+          POSTGRES_DB: testimonial
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U testimonial -d testimonial"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v7
       - name: Show container user, HOME and Node version
@@ -94,6 +109,8 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - name: Apply database migrations
+        run: pnpm -F @testimonial-saas/api prisma:migrate:deploy
       - run: pnpm test:e2e
       - if: failure()
         uses: actions/upload-artifact@v7

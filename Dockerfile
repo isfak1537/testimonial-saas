@@ -25,11 +25,13 @@ RUN pnpm build
 
 # ---- runtime ----
 # Known limitation: the image keeps dev dependencies so `pnpm toolchain:check` and
-# (later) Prisma migrations run in the same image. Slimming is deferred.
+# Prisma migrations (run on container start) work in the same image. Slimming is deferred.
 FROM base AS runtime
 ENV NODE_ENV=production
 COPY --from=build /opt/corepack /opt/corepack
 COPY --from=build --chown=node:node /app /app
 USER node
 EXPOSE 3000
-CMD ["node", "apps/api/dist/server.js"]
+# Apply pending migrations, then start. `&&` means a failed migration stops the container
+# (fail fast); `exec` makes node PID 1 of the shell so it receives SIGTERM.
+CMD ["sh", "-c", "cd apps/api && pnpm exec prisma migrate deploy && cd ../.. && exec node apps/api/dist/server.js"]

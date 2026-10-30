@@ -27,3 +27,6 @@ blob-report/
 
 # Local agent settings
 .claude/settings.local.json
+
+# Local tool settings
+.puku-cli/

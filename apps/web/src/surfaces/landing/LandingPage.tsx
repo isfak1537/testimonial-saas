@@ -4,7 +4,7 @@ import { PRODUCT_NAME } from "@testimonial-saas/shared";
 import "./landing.css";
 
 // Copy rule: describe only planned MVP capabilities, never customers, logos,
-// integrations, pricing or usage numbers. The development banner stays until I21
+// integrations, pricing or usage numbers. The development banner stays until I10
 // confirms every claim matches shipped behaviour.
 
 const FEATURES = [

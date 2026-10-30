@@ -10,12 +10,17 @@
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "toolchain:check": "node dist/toolchain-check.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "@testimonial-saas/shared": "workspace:*",
     "argon2": "0.45.1",
+    "cookie-parser": "1.4.7",
     "express": "5.3.0",
     "express-rate-limit": "8.7.1",
     "pg": "8.23.1",
@@ -23,6 +28,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@types/cookie-parser": "1.4.10",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
     "@types/pg": "8.23.1",

@@ -3,7 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "../src/app.js";
+import { createApp } from "../../src/app.js";
+import { createLogger } from "../../src/logger.js";
+import { fakePrisma } from "../helpers/fake-prisma.js";
+import { testConfig } from "../helpers/test-config.js";
 
 let fixtureDir: string;
 let app: ReturnType<typeof createApp>;
@@ -17,7 +20,11 @@ beforeAll(async () => {
   await writeFile(path.join(webDistDir, "index.html"), "<!doctype html><title>spa</title>");
   await writeFile(path.join(webDistDir, "assets", "index-abc123.js"), "console.log(1)");
   await writeFile(path.join(widgetDistDir, "widget.v1.js"), "(function(){})()");
-  app = createApp({ webDistDir, widgetDistDir });
+  app = createApp({
+    config: testConfig({ WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir }),
+    logger: createLogger("silent"),
+    prisma: fakePrisma(),
+  });
 });
 
 afterAll(async () => {
@@ -28,7 +35,7 @@ describe("health", () => {
   it("returns 200 with status ok", async () => {
     const res = await request(app).get("/api/v1/health");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: "ok" });
+    expect(res.body).toEqual({ status: "ok", db: "up" });
   });
 });
 
@@ -90,4 +97,19 @@ describe("web app", () => {
     const res = await request(app).post("/");
     expect(res.status).toBe(404);
   });
+});
+
+describe("health when the database does not answer", () => {
+  it("returns 503 after the 2-second ping timeout", async () => {
+    const hanging = createApp({
+      config: testConfig({ WEB_DIST_DIR: fixtureDir, WIDGET_DIST_DIR: fixtureDir }),
+      logger: createLogger("silent"),
+      prisma: fakePrisma(() => new Promise(() => {})),
+    });
+    const started = Date.now();
+    const res = await request(hanging).get("/api/v1/health");
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ status: "degraded", db: "down" });
+    expect(Date.now() - started).toBeLessThan(4_000);
+  }, 10_000);
 });

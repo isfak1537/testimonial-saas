@@ -47,6 +47,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Required in production mode. Local compose serves http://localhost over plain http.
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-10}
       DATABASE_URL: postgresql://${POSTGRES_USER:-testimonial}:${POSTGRES_PASSWORD:-testimonial_dev}@db:5432/${POSTGRES_DB:-testimonial}
     ports:
       - "127.0.0.1:${API_HOST_PORT:-3000}:3000"
