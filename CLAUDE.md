@@ -11,6 +11,7 @@ The repository is PUBLIC: never write secrets, personal data or private notes he
 | `docs/requirements/SRS.md`          | Exact behaviour, data model, API, security rules (requirement IDs).             |
 | `docs/requirements/PRD.md`          | Product scope and decisions D1–D10.                                             |
 | `docs/architecture/ARCHITECTURE.md` | Where code goes, layer rules, tenant isolation pattern.                         |
+| `docs/decisions/`                   | Owner-approved implementation decisions (ADRs); they refine the SRS.            |
 
 If these files disagree with each other or with the code, stop and ask the owner.
 The old `PRD.docx` / `SRS.docx` are superseded; ignore them.

@@ -1,4 +1,5 @@
-// I00 baseline: generator and datasource only. Models arrive in I02.
+// SRS §4. Table and column names follow Prisma defaults. CHECK constraints
+// (SRS §4.2) cannot be expressed here; they are hand-added in the init migration.
 
 generator client {
   provider            = "prisma-client"
@@ -10,4 +11,127 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum MemberRole {
+  OWNER
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  sessions    Session[]
+  memberships WorkspaceMember[]
+  auditLogs   AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+model Workspace {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  members      WorkspaceMember[]
+  spaces       Space[]
+  testimonials Testimonial[]
+  auditLogs    AuditLog[]
+}
+
+model WorkspaceMember {
+  workspaceId String     @db.Uuid
+  userId      String     @db.Uuid
+  role        MemberRole
+  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+}
+
+model Space {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  name        String
+  slug        String    @unique
+  headline    String
+  message     String    @default("")
+  prompts     String[]
+  archivedAt  DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  testimonials Testimonial[]
+
+  // Target of the composite foreign key on Testimonial.
+  @@unique([id, workspaceId])
+  @@index([workspaceId, createdAt(sort: Desc)])
+}
+
+model Testimonial {
+  id                 String           @id @default(uuid()) @db.Uuid
+  workspaceId        String           @db.Uuid
+  spaceId            String           @db.Uuid
+  authorName         String
+  authorTitle        String?
+  authorEmail        String?
+  rating             Int
+  content            String
+  moderationStatus   ModerationStatus @default(PENDING)
+  publishedAt        DateTime?        @db.Timestamptz(3)
+  consentVersion     String
+  consentGrantedAt   DateTime         @db.Timestamptz(3)
+  consentWithdrawnAt DateTime?        @db.Timestamptz(3)
+  deletedAt          DateTime?        @db.Timestamptz(3)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  // Composite FK: a testimonial can only reference a Space of its own workspace.
+  space     Space     @relation(fields: [spaceId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@index([spaceId, publishedAt(sort: Desc)])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  actorUserId String?  @db.Uuid
+  action      String
+  targetType  String
+  targetId    String
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  actor     User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
 }

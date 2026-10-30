@@ -5,10 +5,11 @@ import { Writable } from "node:stream";
 import request from "supertest";
 import { z } from "zod";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../src/app.js";
-import { AppError } from "../src/http/errors.js";
-import { validate } from "../src/http/validate.js";
-import { createLogger } from "../src/logger.js";
+import { createApp } from "../../src/app.js";
+import { AppError } from "../../src/http/errors.js";
+import { validate } from "../../src/http/validate.js";
+import { createLogger } from "../../src/logger.js";
+import { fakePrisma } from "../helpers/fake-prisma.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -36,6 +37,7 @@ beforeAll(async () => {
   app = createApp({
     config: { WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir },
     logger: createLogger("info", sink),
+    prisma: fakePrisma(),
     registerRoutes(api) {
       api.get("/test/boom", () => {
         throw new Error("secret internal detail");

@@ -10,6 +10,9 @@
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "toolchain:check": "node dist/toolchain-check.js"
   },
   "dependencies": {

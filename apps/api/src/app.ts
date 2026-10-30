@@ -2,7 +2,9 @@ import path from "node:path";
 import express from "express";
 import type { Logger } from "pino";
 import type { Config } from "./config.js";
+import type { PrismaClient } from "./generated/prisma/client.js";
 import { apiNotFound, errorHandler, fallbackErrorHandler } from "./http/error-handler.js";
+import { health } from "./http/health.js";
 import { jsonBody } from "./http/json-body.js";
 import { requestId } from "./http/request-id.js";
 import { requestLogger } from "./http/request-logger.js";
@@ -11,6 +13,7 @@ import { securityHeaders } from "./http/security-headers.js";
 export interface AppOptions {
   config: Pick<Config, "WEB_DIST_DIR" | "WIDGET_DIST_DIR">;
   logger: Logger;
+  prisma: PrismaClient;
   /** Lets tests mount extra routes on `/api/v1`; production code passes nothing. */
   registerRoutes?: (api: express.Router) => void;
 }
@@ -26,7 +29,7 @@ const SPA_ROUTES: readonly RegExp[] = [
   /^\/w\/[^/]+\/?$/,
 ];
 
-export function createApp({ config, logger, registerRoutes }: AppOptions): express.Express {
+export function createApp({ config, logger, prisma, registerRoutes }: AppOptions): express.Express {
   const webDistDir = config.WEB_DIST_DIR;
   const widgetDistDir = config.WIDGET_DIST_DIR;
   const app = express();
@@ -40,9 +43,7 @@ export function createApp({ config, logger, registerRoutes }: AppOptions): expre
     next();
   });
   api.use(jsonBody);
-  api.get("/health", (_req, res) => {
-    res.json({ status: "ok" });
-  });
+  api.get("/health", health(prisma, logger));
   registerRoutes?.(api);
   app.use("/api/v1", api);
 
