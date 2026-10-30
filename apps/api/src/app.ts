@@ -12,8 +12,13 @@ import { jsonBody } from "./http/json-body.js";
 import { requestId } from "./http/request-id.js";
 import { requestLogger } from "./http/request-logger.js";
 import { securityHeaders } from "./http/security-headers.js";
+import { requireSession } from "./http/auth-context.js";
+import { requireMember } from "./http/member-context.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { createAuthService } from "./modules/auth/auth.service.js";
+import { spacesRoutes } from "./modules/spaces/spaces.routes.js";
+import { createSpacesService } from "./modules/spaces/spaces.service.js";
+import * as members from "./modules/workspaces/members.repo.js";
 
 export interface AppOptions {
   config: Pick<
@@ -56,10 +61,19 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
   api.use(cookieParser());
   api.get("/health", health(prisma, logger));
   // One limiter instance, mounted on sign-up and log-in, so they share the per-IP bucket.
-  api.use(
-    "/auth",
-    authRoutes(createAuthService(prisma, config), config, authLimiter(config.AUTH_RATE_LIMIT_MAX)),
+  const auth = createAuthService(prisma, config);
+  api.use("/auth", authRoutes(auth, config, authLimiter(config.AUTH_RATE_LIMIT_MAX)));
+  // §3.2: one guard for everything under /workspaces/:workspaceId, so a new tenant router
+  // cannot be mounted without a session and a verified OWNER membership.
+  const tenant = express.Router({ mergeParams: true });
+  tenant.use(
+    requireSession(auth),
+    requireMember(["OWNER"], (workspaceId, userId) =>
+      members.findMembership(prisma, workspaceId, userId),
+    ),
   );
+  tenant.use("/spaces", spacesRoutes(createSpacesService(prisma)));
+  api.use("/workspaces/:workspaceId", tenant);
   registerRoutes?.(api);
   app.use("/api/v1", api);
 

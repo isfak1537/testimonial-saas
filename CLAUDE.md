@@ -52,6 +52,7 @@ Plan → Implement → Verify → Review → Owner approval.
 ## Non-negotiable rules
 
 - **Tenant isolation:** tenant repos take `workspaceId` and use it in every `where`. Not a member / wrong tenant → 404. Never trust IDs or status fields from request bodies. Every tenant endpoint gets a cross-tenant test.
+- **Tenant routes:** every route under `/api/v1/workspaces/:workspaceId` mounts on the shared `tenant` router in `app.ts` (`requireSession` → `requireMember`); never mount a tenant route elsewhere.
 - **Publication:** public = approved AND published AND consent not withdrawn AND not deleted AND Space not archived. Public JSON only via allowlist mappers.
 - **Owner** = `WorkspaceMember.role = OWNER`. No owner column on Workspace. Consent fields live on Testimonial.
 - **User text is text:** no `dangerouslySetInnerHTML`; widget uses `textContent` only.

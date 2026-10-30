@@ -1,7 +1,8 @@
 import type { LoginBody, MeResponse, SignupBody } from "@testimonial-saas/shared";
 import type { Config } from "../../config.js";
-import { Prisma, type PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma/client.js";
 import type { Db } from "../../db/types.js";
+import { isUniqueViolationOn } from "../../db/unique-violation.js";
 import { AppError } from "../../http/errors.js";
 import { toMe } from "./auth.mappers.js";
 import { hashPassword, verifyAgainstDummy, verifyPassword } from "./password.js";
@@ -25,27 +26,9 @@ const emailTaken = () =>
     { path: "email", message: "Already registered" },
   ]);
 
-interface UniqueViolationMeta {
-  target?: unknown;
-  driverAdapterError?: { cause?: { constraint?: { fields?: unknown; index?: unknown } } };
-}
-
-/**
- * Only a unique violation on User.email is EMAIL_TAKEN; any other target stays a 500.
- * With the pg driver adapter Prisma 7 omits `meta.target` and reports the violated constraint
- * under `meta.driverAdapterError.cause.constraint` instead (`index: "User_email_key"`), so both
- * shapes are read.
- */
+/** Only a unique violation on User.email is EMAIL_TAKEN; any other target stays a 500. */
 export function isEmailUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
-    return false;
-  }
-  const meta = (error.meta ?? {}) as UniqueViolationMeta;
-  const constraint = meta.driverAdapterError?.cause?.constraint;
-  const names = [meta.target, constraint?.fields, constraint?.index].flatMap((value) =>
-    Array.isArray(value) ? value : value === undefined ? [] : [value],
-  );
-  return names.some((name) => typeof name === "string" && /(^|_)email(_|$)/.test(name));
+  return isUniqueViolationOn(error, "email");
 }
 
 export function createAuthService(prisma: PrismaClient, config: AuthConfig) {

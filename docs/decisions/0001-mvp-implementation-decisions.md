@@ -73,7 +73,7 @@ Found in the I02 security review; each is scheduled in the increment named.
 
 - **I03:** `/health` runs a database ping on every request. Cache the result for 1–2 seconds
   or use an exempt limiter. The Docker healthcheck must never receive 429.
-- **I04:** `Space.prompts` is nullable in the database (Prisma lists are). The Space mapper
+- **I04 (done):** `Space.prompts` is nullable in the database (Prisma lists are). The Space mapper
   returns `[]` for `null`.
 - **I07:** audit writers take `workspaceId` from the verified membership, never from input.
 - **I11:** use a separate migrator database role. Today the container runs migrations with the
@@ -85,7 +85,7 @@ Found in the I02 security review; each is scheduled in the increment named.
   registered (FR-AUTH-03). The per-IP limiter slows enumeration; it does not prevent it.
 - **I10:** sign-up does not invalidate a session the caller already holds (FR-AUTH-06 only requires
   replacement on log-in). Decide whether sign-up should delete it too.
-- **I04:** the slug `P2002` mapping must read `meta.driverAdapterError.cause.constraint`
+- **I04 (done, `db/unique-violation.ts`):** the slug `P2002` mapping must read `meta.driverAdapterError.cause.constraint`
   (`index` / `fields`), because with Prisma 7 and the pg adapter `meta.target` is absent. See
   `isEmailUniqueViolation` in `modules/auth/auth.service.ts`.
 - **Intentional (I03):** `"sideEffects": false` in `packages/shared/package.json` keeps zod out of

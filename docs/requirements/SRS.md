@@ -58,7 +58,7 @@ points to tune, not measured facts.
 |---|---|
 | FR-TEN-01 | Every route under `/api/v1/workspaces/:workspaceId` shall require a valid session and a WorkspaceMember row for (workspaceId, userId). |
 | FR-TEN-02 | If the user is not a member, or the Space/testimonial does not belong to that workspace, the API shall return `404 NOT_FOUND` (never 403), so existence is not revealed. |
-| FR-TEN-03 | `workspaceId`, `spaceId`, `moderationStatus`, `publishedAt`, consent fields and IDs in a request body shall be ignored or rejected. Ownership comes only from the URL + verified membership. |
+| FR-TEN-03 | `workspaceId`, `spaceId`, `moderationStatus`, `publishedAt`, consent fields and IDs in a request body shall be rejected with `422 VALIDATION_FAILED` (strict bodies). Ownership comes only from the URL + verified membership. A malformed `workspaceId` or `spaceId` in the URL gives the same `404 NOT_FOUND` as an unknown one. |
 | FR-TEN-04 | Repository functions for tenant-owned data shall take `workspaceId` as a required argument and include it in every `where` clause. |
 | FR-TEN-05 | The role check helper shall accept a list of allowed roles. In the MVP every dashboard route allows `OWNER`. A member without an allowed role gets `403 FORBIDDEN`. |
 
@@ -67,10 +67,10 @@ points to tune, not measured facts.
 | ID | Requirement |
 |---|---|
 | FR-SPACE-01 | Owner shall create a Space with name (1–80), slug, headline (1–120), message (0–500) and prompts (0–5 items, each 1–200). |
-| FR-SPACE-02 | Slug shall match `^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$` (3–40 chars), be stored lowercase, and be globally unique. Input is lowercased before validation. Duplicate → `409 SLUG_TAKEN`. |
-| FR-SPACE-03 | Reserved slugs shall be rejected: `admin, api, app, assets, c, embed, help, login, logout, signup, support, w, www`. |
-| FR-SPACE-04 | Owner shall list (newest first, archived excluded unless `includeArchived=true`), read and update Spaces. Slug may be changed; old links then stop working (shown as a warning in the UI). |
-| FR-SPACE-05 | Owner shall archive a Space (`archivedAt` set). Archived Spaces return 404 on all public endpoints and keep their slug reserved. |
+| FR-SPACE-02 | Slug shall match `^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$` (3–40 chars), be stored lowercase, and be globally unique. Input is lowercased before validation. A malformed or reserved slug → `422 VALIDATION_FAILED` (path `slug`). Duplicate → `409 SLUG_TAKEN` with `details: [{ path, message }]`. |
+| FR-SPACE-03 | Reserved slugs shall be rejected (422, compared after lowercasing): `admin, api, app, assets, c, embed, help, login, logout, signup, support, w, www`. |
+| FR-SPACE-04 | Owner shall list, read and update Spaces. The list is newest first (`createdAt` desc, `id` desc), excludes archived Spaces unless `includeArchived=true`, and uses cursor pagination: `limit` default 20, max 50; response `{ items, nextCursor }` (`nextCursor` is `null` on the last page). Slug may be changed; old links then stop working (shown as a warning in the UI). An archived Space is read-only: `PATCH` returns `409 INVALID_STATE`. |
+| FR-SPACE-05 | Owner shall archive a Space (`archivedAt` set). Archived Spaces return 404 on all public endpoints and keep their slug reserved. Archiving is idempotent (an archived Space keeps its first `archivedAt`); there is no unarchive in the MVP. |
 
 ### 3.4 Public collection (I06)
 
