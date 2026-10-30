@@ -41,16 +41,16 @@ points to tune, not measured facts.
 
 | ID | Requirement |
 |---|---|
-| FR-AUTH-01 | A visitor shall sign up with email, password and display name. Email is trimmed and lowercased. Password length 10–128 characters. |
+| FR-AUTH-01 | A visitor shall sign up with email, password and display name. Email is trimmed and lowercased. Password length 10–128 characters. Display name is trimmed, 1–80 characters. Request bodies are strict: unknown or forbidden keys (for example `workspaceId`, `role`) give `422 VALIDATION_FAILED`. |
 | FR-AUTH-02 | Sign-up shall, in one database transaction, create the User, a Workspace named "{displayName}'s workspace", and a WorkspaceMember with role `OWNER`. |
-| FR-AUTH-03 | Sign-up with an existing email shall return `409 EMAIL_TAKEN`. *(Accepted trade-off: reveals that an email is registered.)* |
+| FR-AUTH-03 | Sign-up with an existing email shall return `409 EMAIL_TAKEN` with `details: [{ "path": "email", "message": … }]`. *(Accepted trade-off: reveals that an email is registered.)* |
 | FR-AUTH-04 | Log-in shall return the same `401 INVALID_CREDENTIALS` for an unknown email and a wrong password, and shall run a password hash comparison in both cases. |
 | FR-AUTH-05 | Passwords shall be hashed with argon2id. Plain passwords shall never be logged or stored. |
-| FR-AUTH-06 | A successful sign-up or log-in shall create a server-side session and set cookie `sid` (HttpOnly, SameSite=Lax, Path=/, Secure in production, Max-Age 7 days). |
-| FR-AUTH-07 | The session token shall be 32 random bytes (base64url). Only its SHA-256 hash is stored. Sessions expire 7 days after creation. |
+| FR-AUTH-06 | A successful sign-up or log-in shall create a server-side session and set cookie `sid` (HttpOnly, SameSite=Lax, Path=/, Max-Age = `SESSION_TTL_DAYS` days, default 7). `Secure` is set only when `APP_ORIGIN` is `https`. Logging in while already logged in deletes the old session and creates a new one. |
+| FR-AUTH-07 | The session token shall be 32 random bytes (base64url). Only its SHA-256 hash is stored. Sessions expire `SESSION_TTL_DAYS` (default 7) days after creation; an expired session is treated as missing (`401`). |
 | FR-AUTH-08 | Log-out shall delete the session row and clear the cookie. Return 204. |
-| FR-AUTH-09 | `GET /auth/me` shall return the user and their workspace, or 401. |
-| FR-AUTH-10 | Sign-up and log-in shall be rate limited per IP *(initial: 10 requests / 15 min)*. |
+| FR-AUTH-09 | `GET /auth/me`, and the bodies of a successful sign-up (201) and log-in (200), shall return `{ "user": { "id", "email", "displayName" }, "workspace": { "id", "name" }, "role" }`, built by an allowlist mapper; `me` without a valid session returns 401. |
+| FR-AUTH-10 | Sign-up and log-in shall be rate limited per IP by one shared limiter. The maximum is `AUTH_RATE_LIMIT_MAX` (default 10 per 15 minutes) and is raised only in test and E2E configuration. The limiter runs before validation, password hashing and any database access; the response is `429 RATE_LIMITED` with `Retry-After`. |
 
 ### 3.2 Authorization and tenant isolation (I04, applies to every later increment)
 
@@ -199,7 +199,7 @@ Body limit 16 KB. Timestamps ISO 8601 UTC.
 | 401 | `UNAUTHENTICATED` / `INVALID_CREDENTIALS` | No/expired session; bad login |
 | 403 | `FORBIDDEN` | Member without required role; failed Origin check |
 | 404 | `NOT_FOUND` | Missing, or not in the caller's tenant |
-| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `INVALID_STATE`, `CONSENT_VERSION_OUTDATED` | Conflicts |
+| 409 | `EMAIL_TAKEN`, `SLUG_TAKEN`, `INVALID_STATE`, `CONSENT_VERSION_OUTDATED` | Conflicts. `EMAIL_TAKEN` and `SLUG_TAKEN` include `details: [{ path, message }]` naming the field. |
 | 422 | `VALIDATION_FAILED` | Zod validation failed |
 | 429 | `RATE_LIMITED` | Rate limit hit (`Retry-After` header) |
 | 500 | `INTERNAL` | Unexpected error; message is generic, details only in logs |
@@ -238,7 +238,7 @@ the API (validation) and the web app (types).
 | ID | Requirement |
 |---|---|
 | SEC-01 | All tenant rules in §3.2. |
-| SEC-02 | CSRF: every non-GET request under `/api/v1` (including the public submission POST) shall have an `Origin` header equal to `APP_ORIGIN` (env var), otherwise `403 FORBIDDEN`. Combined with SameSite=Lax cookies and JSON-only bodies. |
+| SEC-02 | CSRF: every non-GET request under `/api/v1` (including the public submission POST) shall have an `Origin` header equal to `APP_ORIGIN` (env var), otherwise `403 FORBIDDEN`. There is one `APP_ORIGIN` per environment (the Vite dev server uses `http://localhost:5173`); it has no default when `NODE_ENV=production`, and in production it must be `https` unless the host is `localhost` or `127.0.0.1`. Combined with SameSite=Lax cookies and JSON-only bodies. |
 | SEC-03 | Responses shall set `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`. HTML responses shall set `X-Frame-Options: DENY` and a Content-Security-Policy starting from `default-src 'self'; frame-ancestors 'none'` (verify the SPA still loads). |
 | SEC-04 | Logs shall redact `cookie`, `set-cookie`, `password`, `passwordHash`, `authorEmail`, and session tokens. |
 | SEC-05 | User text is rendered only as text: React default escaping in web (`dangerouslySetInnerHTML` forbidden), `textContent` in widget. |

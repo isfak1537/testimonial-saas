@@ -78,3 +78,17 @@ Found in the I02 security review; each is scheduled in the increment named.
 - **I07:** audit writers take `workspaceId` from the verified membership, never from input.
 - **I11:** use a separate migrator database role. Today the container runs migrations with the
   application's credentials.
+- **I10:** purge expired `Session` rows. I03 rejects them on read but never deletes them.
+- **I11:** decide `trust proxy` (exact hop count, SEC-07) before any proxied deployment. Behind a
+  proxy without it every client shares one rate-limit bucket (the proxy's IP).
+- **Accepted trade-off (I03):** sign-up returns `409 EMAIL_TAKEN`, so it reveals whether an email is
+  registered (FR-AUTH-03). The per-IP limiter slows enumeration; it does not prevent it.
+- **I10:** sign-up does not invalidate a session the caller already holds (FR-AUTH-06 only requires
+  replacement on log-in). Decide whether sign-up should delete it too.
+- **I04:** the slug `P2002` mapping must read `meta.driverAdapterError.cause.constraint`
+  (`index` / `fields`), because with Prisma 7 and the pg adapter `meta.target` is absent. See
+  `isEmailUniqueViolation` in `modules/auth/auth.service.ts`.
+- **Intentional (I03):** `"sideEffects": false` in `packages/shared/package.json` keeps zod out of
+  the web bundle (the web app imports only `PRODUCT_NAME`). Do not remove it.
+- **Config (I03):** in production `APP_ORIGIN` must be https unless the host is `localhost` or
+  `127.0.0.1`, so a mistyped http origin cannot yield a non-Secure session cookie.

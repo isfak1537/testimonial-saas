@@ -1,17 +1,25 @@
 import path from "node:path";
+import cookieParser from "cookie-parser";
 import express from "express";
 import type { Logger } from "pino";
 import type { Config } from "./config.js";
 import type { PrismaClient } from "./generated/prisma/client.js";
 import { apiNotFound, errorHandler, fallbackErrorHandler } from "./http/error-handler.js";
 import { health } from "./http/health.js";
+import { originCheck } from "./http/origin-check.js";
+import { authLimiter } from "./http/rate-limits.js";
 import { jsonBody } from "./http/json-body.js";
 import { requestId } from "./http/request-id.js";
 import { requestLogger } from "./http/request-logger.js";
 import { securityHeaders } from "./http/security-headers.js";
+import { authRoutes } from "./modules/auth/auth.routes.js";
+import { createAuthService } from "./modules/auth/auth.service.js";
 
 export interface AppOptions {
-  config: Pick<Config, "WEB_DIST_DIR" | "WIDGET_DIST_DIR">;
+  config: Pick<
+    Config,
+    "WEB_DIST_DIR" | "WIDGET_DIST_DIR" | "APP_ORIGIN" | "SESSION_TTL_DAYS" | "AUTH_RATE_LIMIT_MAX"
+  >;
   logger: Logger;
   prisma: PrismaClient;
   /** Lets tests mount extra routes on `/api/v1`; production code passes nothing. */
@@ -42,8 +50,16 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
     res.setHeader("Cache-Control", "no-store");
     next();
   });
+  // SEC-02 runs before anything reads the body or the cookie.
+  api.use(originCheck(config.APP_ORIGIN));
   api.use(jsonBody);
+  api.use(cookieParser());
   api.get("/health", health(prisma, logger));
+  // One limiter instance, mounted on sign-up and log-in, so they share the per-IP bucket.
+  api.use(
+    "/auth",
+    authRoutes(createAuthService(prisma, config), config, authLimiter(config.AUTH_RATE_LIMIT_MAX)),
+  );
   registerRoutes?.(api);
   app.use("/api/v1", api);
 

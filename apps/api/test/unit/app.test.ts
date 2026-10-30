@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/app.js";
 import { createLogger } from "../../src/logger.js";
 import { fakePrisma } from "../helpers/fake-prisma.js";
+import { testConfig } from "../helpers/test-config.js";
 
 let fixtureDir: string;
 let app: ReturnType<typeof createApp>;
@@ -20,7 +21,7 @@ beforeAll(async () => {
   await writeFile(path.join(webDistDir, "assets", "index-abc123.js"), "console.log(1)");
   await writeFile(path.join(widgetDistDir, "widget.v1.js"), "(function(){})()");
   app = createApp({
-    config: { WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir },
+    config: testConfig({ WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir }),
     logger: createLogger("silent"),
     prisma: fakePrisma(),
   });
@@ -101,7 +102,7 @@ describe("web app", () => {
 describe("health when the database does not answer", () => {
   it("returns 503 after the 2-second ping timeout", async () => {
     const hanging = createApp({
-      config: { WEB_DIST_DIR: fixtureDir, WIDGET_DIST_DIR: fixtureDir },
+      config: testConfig({ WEB_DIST_DIR: fixtureDir, WIDGET_DIST_DIR: fixtureDir }),
       logger: createLogger("silent"),
       prisma: fakePrisma(() => new Promise(() => {})),
     });

@@ -10,6 +10,7 @@ import { AppError } from "../../src/http/errors.js";
 import { validate } from "../../src/http/validate.js";
 import { createLogger } from "../../src/logger.js";
 import { fakePrisma } from "../helpers/fake-prisma.js";
+import { TEST_ORIGIN, testConfig } from "../helpers/test-config.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -35,7 +36,7 @@ beforeAll(async () => {
   await writeFile(path.join(webDistDir, "index.html"), "<!doctype html><title>spa</title>");
   await writeFile(path.join(widgetDistDir, "widget.v1.js"), "(function(){})()");
   app = createApp({
-    config: { WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir },
+    config: testConfig({ WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir }),
     logger: createLogger("info", sink),
     prisma: fakePrisma(),
     registerRoutes(api) {
@@ -128,6 +129,7 @@ describe("validate", () => {
   it("returns 422 with details for params, query and body", async () => {
     const res = await request(app)
       .post("/api/v1/test/validate/not-a-uuid?page=0")
+      .set("Origin", TEST_ORIGIN)
       .send({ content: "x" });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("VALIDATION_FAILED");
@@ -139,6 +141,7 @@ describe("validate", () => {
   it("passes valid input through", async () => {
     const res = await request(app)
       .post("/api/v1/test/validate/3f2b1c3e-8a52-4d3b-9f64-6a1d2e7c9b10?page=2")
+      .set("Origin", TEST_ORIGIN)
       .send({ content: "hello" });
     expect(res.status).toBe(200);
   });
@@ -148,6 +151,7 @@ describe("JSON body handling", () => {
   it("rejects malformed JSON with 400 BAD_REQUEST", async () => {
     const res = await request(app)
       .post("/api/v1/test/echo")
+      .set("Origin", TEST_ORIGIN)
       .set("Content-Type", "application/json")
       .send("{not json");
     expect(res.status).toBe(400);
@@ -158,6 +162,7 @@ describe("JSON body handling", () => {
   it("rejects a non-JSON body with 400 BAD_REQUEST", async () => {
     const res = await request(app)
       .post("/api/v1/test/echo")
+      .set("Origin", TEST_ORIGIN)
       .set("Content-Type", "text/plain")
       .send("hello");
     expect(res.status).toBe(400);
@@ -167,6 +172,7 @@ describe("JSON body handling", () => {
   it("rejects a body over 16 KB with the envelope", async () => {
     const res = await request(app)
       .post("/api/v1/test/echo")
+      .set("Origin", TEST_ORIGIN)
       .set("Content-Type", "application/json")
       .send(JSON.stringify({ a: "x".repeat(17 * 1024) }));
     expect(res.status).toBe(400);
@@ -174,9 +180,12 @@ describe("JSON body handling", () => {
   });
 
   it("accepts JSON and POST without a body", async () => {
-    const ok = await request(app).post("/api/v1/test/echo").send({ a: 1 });
+    const ok = await request(app)
+      .post("/api/v1/test/echo")
+      .set("Origin", TEST_ORIGIN)
+      .send({ a: 1 });
     expect(ok.body).toEqual({ body: { a: 1 } });
-    const empty = await request(app).post("/api/v1/test/echo");
+    const empty = await request(app).post("/api/v1/test/echo").set("Origin", TEST_ORIGIN);
     expect(empty.status).toBe(200);
   });
 });
@@ -190,6 +199,7 @@ describe("outside /api", () => {
   it("rejects chunked non-JSON bodies", async () => {
     const res = await request(app)
       .post("/api/v1/test/echo")
+      .set("Origin", TEST_ORIGIN)
       .set("Content-Type", "text/plain")
       .set("Transfer-Encoding", "chunked")
       .send("hello");

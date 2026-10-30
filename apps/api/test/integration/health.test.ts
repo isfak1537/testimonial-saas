@@ -4,8 +4,9 @@ import { createApp } from "../../src/app.js";
 import { createPrisma } from "../../src/db/client.js";
 import { createLogger } from "../../src/logger.js";
 import { disconnectTestPrisma, testPrisma } from "../helpers/test-db.js";
+import { testConfig } from "../helpers/test-config.js";
 
-const config = { WEB_DIST_DIR: "/nonexistent-web", WIDGET_DIST_DIR: "/nonexistent-widget" };
+const config = testConfig();
 
 afterAll(async () => {
   await disconnectTestPrisma();

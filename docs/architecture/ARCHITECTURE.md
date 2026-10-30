@@ -47,16 +47,19 @@ apps/api/src/
     errors.ts            AppError class + error codes from SRS §5.1
     error-handler.ts     converts any error into the envelope; logs with requestId
     request-id.ts
+    request-logger.ts    one log line per request; never headers, bodies or query strings
     security-headers.ts
+    json-body.ts         16 KB JSON body parser; rejects non-JSON content types
     origin-check.ts      SEC-02
     validate.ts          validate({ body, params, query }) with Zod schemas
     rate-limits.ts       named limiters (auth, submission, wall)
-    auth-context.ts      requireSession, requireMember(roles), getCtx(res)
+    health.ts            GET /health (per-app 1 s cached DB ping)
+    auth-context.ts      requireSession, getSession(res) (I03); requireMember(roles), getCtx(res) (I04)
   db/
     client.ts            PrismaClient with adapter-pg
     types.ts             Db = PrismaClient | Prisma.TransactionClient
   modules/
-    auth/                auth.routes.ts, auth.service.ts, users.repo.ts, sessions.repo.ts, password.ts
+    auth/                auth.routes.ts, auth.service.ts, auth.mappers.ts, users.repo.ts, sessions.repo.ts, password.ts, session-token.ts, cookie.ts
     workspaces/          members.repo.ts
     spaces/              spaces.routes.ts, spaces.service.ts, spaces.repo.ts, slug.ts
     testimonials/        testimonials.routes.ts, testimonials.service.ts, testimonials.repo.ts, transitions.ts
@@ -65,7 +68,7 @@ apps/api/src/
   scripts/
     purge-deleted.ts
 apps/api/test/
-  helpers/               test-db.ts (migrate + truncate), factories.ts, agent.ts (logged-in supertest agent)
+  helpers/               test-db.ts (migrate + truncate), factories.ts, test-config.ts, auth-app.ts (app + captured logs, signup/cookie helpers)
   unit/                  no database
   integration/           real db-test Postgres
 
