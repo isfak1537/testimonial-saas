@@ -8,6 +8,8 @@ import type {
   SpaceListResponse,
   SubmissionReceipt,
   SubmitTestimonialBody,
+  TestimonialDto,
+  TestimonialListResponse,
   UpdateSpaceBody,
 } from "@testimonial-saas/shared";
 
@@ -73,7 +75,7 @@ async function toApiError(response: Response): Promise<ApiError> {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH";
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
 }
 
@@ -98,6 +100,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+const testimonialsPath = (workspaceId: string, spaceId: string) =>
+  `/workspaces/${encodeURIComponent(workspaceId)}/spaces/${encodeURIComponent(spaceId)}/testimonials`;
 
 export const api = {
   getMe: () => request<MeResponse>("/auth/me"),
@@ -130,6 +135,33 @@ export const api = {
       `/workspaces/${encodeURIComponent(workspaceId)}/spaces/${encodeURIComponent(spaceId)}/archive`,
       { method: "POST" },
     ),
+
+  listTestimonials: (
+    workspaceId: string,
+    spaceId: string,
+    filters: { status?: string; published?: string; cursor?: string } = {},
+  ) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
+    const query = params.size > 0 ? `?${params}` : "";
+    return request<TestimonialListResponse>(`${testimonialsPath(workspaceId, spaceId)}${query}`);
+  },
+  getTestimonial: (workspaceId: string, spaceId: string, id: string) =>
+    request<TestimonialDto>(`${testimonialsPath(workspaceId, spaceId)}/${encodeURIComponent(id)}`),
+  testimonialAction: (
+    workspaceId: string,
+    spaceId: string,
+    id: string,
+    action: "approve" | "reject" | "publish" | "unpublish" | "withdraw-consent",
+  ) =>
+    request<TestimonialDto>(
+      `${testimonialsPath(workspaceId, spaceId)}/${encodeURIComponent(id)}/${action}`,
+      { method: "POST" },
+    ),
+  deleteTestimonial: (workspaceId: string, spaceId: string, id: string) =>
+    request<void>(`${testimonialsPath(workspaceId, spaceId)}/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
 
   getPublicForm: (slug: string) =>
     request<PublicFormDto>(`/public/spaces/${encodeURIComponent(slug)}/form`),

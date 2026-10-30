@@ -93,16 +93,16 @@ Consent text v1 (`2026-10-30.v1`):
 
 | ID | Requirement |
 |---|---|
-| FR-INB-01 | Owner shall list a Space's testimonials, excluding deleted ones, newest first, with filters `status` (`pending`/`approved`/`rejected`) and `published` (`true`/`false`). |
+| FR-INB-01 | Owner shall list a Space's testimonials, excluding deleted ones, newest first (`createdAt` desc, `id` desc), with filters `status` (`pending`/`approved`/`rejected`) and `published` (`true`/`false`). |
 | FR-INB-02 | The list shall use cursor pagination: `limit` default 20, max 50; response includes `nextCursor` or `null`. |
-| FR-INB-03 | Owner shall view a testimonial's full detail, including private `authorEmail`. |
-| FR-INB-04 | Allowed transitions: PENDING→APPROVED, PENDING→REJECTED, APPROVED→REJECTED, REJECTED→APPROVED. Others → `409 INVALID_STATE`. Approving an already approved item is a 200 no-op. |
+| FR-INB-03 | Owner shall view a testimonial's full detail, including private `authorEmail`. List items omit `authorEmail`. Action endpoints take no body (an empty `{}` is accepted; any key gives `422`) and return the detail DTO; `DELETE` returns `204`. |
+| FR-INB-04 | Allowed transitions: PENDING→APPROVED, PENDING→REJECTED, APPROVED→REJECTED, REJECTED→APPROVED. Others → `409 INVALID_STATE`. Approving an already approved item is a 200 no-op. A testimonial whose consent was withdrawn cannot be approved (`409 INVALID_STATE`); it can still be rejected. In an archived Space approve, reject, publish and unpublish return `409 INVALID_STATE` (withdraw-consent and delete still work). |
 | FR-INB-05 | Rejecting a published testimonial shall also set `publishedAt = NULL` in the same transaction. |
-| FR-INB-06 | Publish shall succeed only if APPROVED, consent not withdrawn and not deleted; otherwise `409 INVALID_STATE`. Publish and unpublish are idempotent. |
-| FR-INB-07 | Withdraw consent shall set `consentWithdrawnAt = now()` and `publishedAt = NULL` in one transaction. It is irreversible; such an item can never be published again. |
-| FR-INB-08 | Delete shall set `deletedAt = now()` and `publishedAt = NULL` (soft delete). Deleted items disappear from all lists and public output. |
+| FR-INB-06 | Publish shall succeed only if APPROVED, consent not withdrawn and not deleted; otherwise `409 INVALID_STATE`. Publish and unpublish are idempotent (a repeated call is a 200 that changes nothing). Each transition is applied only if the row still satisfies its precondition, so a concurrent change gives `409 INVALID_STATE`, never an invalid row. |
+| FR-INB-07 | Withdraw consent shall set `consentWithdrawnAt = now()` and `publishedAt = NULL` in one transaction. It is irreversible; such an item can never be published again. Repeating it is a 200 that keeps the first timestamp. |
+| FR-INB-08 | Delete shall set `deletedAt = now()` and `publishedAt = NULL` (soft delete). Deleted items disappear from all lists and public output; detail and every action on a deleted item return `404 NOT_FOUND`. |
 | FR-INB-09 | The owner shall not be able to edit authorName, authorTitle, rating, content or consent fields (PRD D10). No endpoint exists for it. |
-| FR-INB-10 | Approve, reject, publish, unpublish, withdraw-consent and delete shall each write an `AuditLog` row in the same transaction. |
+| FR-INB-10 | Approve, reject, publish, unpublish, withdraw-consent and delete shall each write one `AuditLog` row in the same transaction when they change something. A repeated call that changes nothing (200 no-op) and a refused call (409) write none. `workspaceId` and `actorUserId` come from the verified membership; `metadata` is `{spaceId, from, to}` and holds no personal data. |
 
 ### 3.6 Public Wall (I08)
 

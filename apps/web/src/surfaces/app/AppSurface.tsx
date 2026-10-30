@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes } from "react-router";
 import { RequireAuth } from "../../auth/RequireAuth";
 import CollectionTab from "./CollectionTab";
+import InboxTab from "./InboxTab";
 import { AppShell } from "./AppShell";
 import NewSpacePage from "./NewSpacePage";
 import SpaceLayout from "./SpaceLayout";
@@ -17,9 +18,8 @@ export default function AppSurface() {
           <Route index element={<SpacesListPage />} />
           <Route path="spaces/new" element={<NewSpacePage />} />
           <Route path="spaces/:spaceId" element={<SpaceLayout />}>
-            {/* Settings is the default tab until the Inbox exists (I07). */}
-            <Route index element={<Navigate to="settings" replace />} />
-            <Route path="inbox" element={<TabPlaceholder title="Inbox" />} />
+            <Route index element={<Navigate to="inbox" replace />} />
+            <Route path="inbox" element={<InboxTab />} />
             <Route path="collection" element={<CollectionTab />} />
             <Route path="wall" element={<TabPlaceholder title="Wall" />} />
             <Route path="embed" element={<TabPlaceholder title="Embed" />} />

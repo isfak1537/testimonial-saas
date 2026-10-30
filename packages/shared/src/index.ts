@@ -26,3 +26,15 @@ export type {
   SubmissionReceipt,
   SubmitTestimonialBody,
 } from "./contracts/public.js";
+export {
+  listTestimonialsQuery,
+  MODERATION_STATUSES,
+  testimonialActionBody,
+} from "./contracts/testimonials.js";
+export type {
+  ListTestimonialsQuery,
+  ModerationStatus,
+  TestimonialDto,
+  TestimonialListItemDto,
+  TestimonialListResponse,
+} from "./contracts/testimonials.js";

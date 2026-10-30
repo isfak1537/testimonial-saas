@@ -10,6 +10,7 @@ type TestimonialOverrides = Partial<{
   publishedAt: Date | null;
   consentWithdrawnAt: Date | null;
   deletedAt: Date | null;
+  createdAt: Date;
 }>;
 
 /** A user with a workspace and an OWNER membership, as sign-up will create them. */
@@ -62,6 +63,7 @@ export function createTestimonial(
       consentGrantedAt: new Date(),
       consentWithdrawnAt: o.consentWithdrawnAt ?? null,
       deletedAt: o.deletedAt ?? null,
+      ...(o.createdAt ? { createdAt: o.createdAt } : {}),
     },
   });
 }

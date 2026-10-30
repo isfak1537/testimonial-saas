@@ -20,6 +20,7 @@ import { publicRoutes } from "./modules/public/public.routes.js";
 import { createPublicService } from "./modules/public/public.service.js";
 import { spacesRoutes } from "./modules/spaces/spaces.routes.js";
 import { createSpacesService } from "./modules/spaces/spaces.service.js";
+import { createTestimonialsService } from "./modules/testimonials/testimonials.service.js";
 import * as members from "./modules/workspaces/members.repo.js";
 
 export interface AppOptions {
@@ -79,7 +80,10 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
       members.findMembership(prisma, workspaceId, userId),
     ),
   );
-  tenant.use("/spaces", spacesRoutes(createSpacesService(prisma)));
+  tenant.use(
+    "/spaces",
+    spacesRoutes(createSpacesService(prisma), createTestimonialsService(prisma)),
+  );
   api.use("/workspaces/:workspaceId", tenant);
   // Public, untenanted: the Space is found by its global slug, and every identifier on the stored
   // row comes from that lookup, never from the request.

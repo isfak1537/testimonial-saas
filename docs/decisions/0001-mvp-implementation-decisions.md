@@ -75,7 +75,7 @@ Found in the I02 security review; each is scheduled in the increment named.
   or use an exempt limiter. The Docker healthcheck must never receive 429.
 - **I04 (done):** `Space.prompts` is nullable in the database (Prisma lists are). The Space mapper
   returns `[]` for `null`.
-- **I07:** audit writers take `workspaceId` from the verified membership, never from input.
+- **I07 (done, `modules/audit/audit.repo.ts`):** audit writers take `workspaceId` from the verified membership, never from input.
 - **I11:** use a separate migrator database role. Today the container runs migrations with the
   application's credentials.
 - **I10:** purge expired `Session` rows. I03 rejects them on read but never deletes them.

@@ -47,17 +47,16 @@ test.describe("Spaces", () => {
     await expect(page).toHaveURL(/\/spaces\/new$/);
   });
 
-  test("tabs render and Settings is the default", async ({ page }) => {
+  test("tabs render and Inbox is the default", async ({ page }) => {
     await signUp(page);
-    await createSpaceViaUi(page, "Tabs", uniqueSlug());
+    const spaceId = await createSpaceViaUi(page, "Tabs", uniqueSlug());
+    await page.goto(`/app/spaces/${spaceId}`);
+    await expect(page).toHaveURL(/\/inbox$/);
     const nav = page.getByRole("navigation", { name: "Space sections" });
     for (const tab of ["Inbox", "Collection", "Wall", "Embed", "Settings"]) {
       await expect(nav.getByRole("link", { name: tab })).toBeVisible();
     }
-    await expect(nav.getByRole("link", { name: "Settings" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    await expect(nav.getByRole("link", { name: "Inbox" })).toHaveAttribute("aria-current", "page");
     await nav.getByRole("link", { name: "Inbox" }).click();
     await expect(page.getByRole("heading", { name: "Inbox", level: 2 })).toBeVisible();
   });

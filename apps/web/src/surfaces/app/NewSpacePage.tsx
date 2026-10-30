@@ -17,7 +17,7 @@ export default function NewSpacePage() {
         submitLabel="Create Space"
         onSubmit={async (values) => {
           const space = await api.createSpace(workspace.id, values);
-          void navigate(`/app/spaces/${space.id}`);
+          void navigate(`/app/spaces/${space.id}/settings`);
         }}
       />
     </>
