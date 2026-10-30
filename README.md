@@ -72,7 +72,12 @@ The first Playwright run needs a browser: `pnpm exec playwright install chromium
 - The public pages are a single-page app: content appears after JavaScript loads, and the
   pages are not server-rendered for SEO.
 
-## Confidential documents
+## Project documents
 
-`docs/requirements/*.docx` (PRD and SRS drafts) are ignored by Git until repository privacy
-is confirmed. Do not add them.
+- `docs/requirements/PRD.md` and `SRS.md`: product and software requirements (v2).
+- `docs/architecture/ARCHITECTURE.md`: where code goes and which rules it follows.
+- `docs/BUILD_ORDER.md`: the increment plan (I00–I10).
+- `CLAUDE.md`: instructions for Claude Code sessions.
+
+The old Word drafts (`docs/requirements/*.docx`) are superseded, ignored by Git, and must not
+be added.
