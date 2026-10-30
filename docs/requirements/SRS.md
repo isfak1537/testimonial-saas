@@ -76,13 +76,13 @@ points to tune, not measured facts.
 
 | ID | Requirement |
 |---|---|
-| FR-COL-01 | `GET /public/spaces/:slug/form` shall return only: Space name, headline, message, prompts, and the current consent `{version, text}`. Archived or unknown → 404. |
-| FR-COL-02 | `POST /public/spaces/:slug/testimonials` shall accept: authorName (1–80), authorTitle (0–120, optional), authorEmail (optional, valid email, max 254), rating (integer 1–5), content (10–2000 after trimming), consent (must be `true`), consentVersion, website (honeypot). |
+| FR-COL-01 | `GET /public/spaces/:slug/form` shall return only: Space name, headline, message, prompts, and the current consent `{version, text}`. The `text` is rendered with the Space name; the SHA-256 pin (FR-COL-08) covers the unrendered template. Archived, unknown or malformed slug → the same 404. |
+| FR-COL-02 | `POST /public/spaces/:slug/testimonials` shall accept: authorName (1–80), authorTitle (0–120, optional), authorEmail (optional, valid email, max 254), rating (integer 1–5), content (10–2000 after trimming), consent (must be `true`), consentVersion, website (honeypot, ≤200 chars). The body is strict: unknown or server-owned keys (`workspaceId`, `spaceId`, `moderationStatus`, `publishedAt`, consent dates, ids) → 422. A blank authorTitle is stored as null; authorEmail is omitted or valid. Success is `201 {status:"received"}`. |
 | FR-COL-03 | If `consentVersion` differs from the current version → `409 CONSENT_VERSION_OUTDATED` (UI asks the visitor to reload). |
-| FR-COL-04 | If the honeypot `website` is non-empty, the API shall return 201 and store nothing. |
+| FR-COL-04 | If the honeypot `website` is non-empty, the API shall return the same 201 body as a real submission and store nothing. Evaluation order: validation (422) → Space lookup (404) → honeypot → consent version (409) → store. |
 | FR-COL-05 | A stored testimonial shall have `moderationStatus = PENDING`, `publishedAt = NULL`, `consentVersion` = submitted version, `consentGrantedAt = now()`. |
 | FR-COL-06 | Invalid input → `422 VALIDATION_FAILED` with field errors; nothing is stored. |
-| FR-COL-07 | Submissions shall be rate limited per IP *(initial: 5 / 10 min)* and require a same-origin `Origin` header. |
+| FR-COL-07 | Submissions shall be rate limited per IP by a limiter that runs before validation and any database access (honeypot hits and invalid bodies spend budget; `429 RATE_LIMITED` with `Retry-After`). The maximum is `SUBMISSION_RATE_LIMIT_MAX` (default 5 per 10 minutes) and is raised only in test and E2E configuration. The form `GET` is not limited. Submissions also require the `Origin` header of SEC-02. |
 | FR-COL-08 | The consent text and version shall live in `packages/shared/src/consent.ts`. A unit test shall pin the SHA-256 of each released version's text so a version's wording can never change silently. |
 
 Consent text v1 (`2026-10-30.v1`):
@@ -195,7 +195,7 @@ Body limit 16 KB. Timestamps ISO 8601 UTC.
 
 | Status | Code | When |
 |---|---|---|
-| 400 | `BAD_REQUEST` | Malformed JSON, wrong content type |
+| 400 | `BAD_REQUEST` | Malformed JSON, wrong content type, request body over 16 KB (never 413) |
 | 401 | `UNAUTHENTICATED` / `INVALID_CREDENTIALS` | No/expired session; bad login |
 | 403 | `FORBIDDEN` | Member without required role; failed Origin check |
 | 404 | `NOT_FOUND` | Missing, or not in the caller's tenant |

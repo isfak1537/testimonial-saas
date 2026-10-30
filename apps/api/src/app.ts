@@ -7,7 +7,7 @@ import type { PrismaClient } from "./generated/prisma/client.js";
 import { apiNotFound, errorHandler, fallbackErrorHandler } from "./http/error-handler.js";
 import { health } from "./http/health.js";
 import { originCheck } from "./http/origin-check.js";
-import { authLimiter } from "./http/rate-limits.js";
+import { authLimiter, submissionLimiter } from "./http/rate-limits.js";
 import { jsonBody } from "./http/json-body.js";
 import { requestId } from "./http/request-id.js";
 import { requestLogger } from "./http/request-logger.js";
@@ -16,6 +16,8 @@ import { requireSession } from "./http/auth-context.js";
 import { requireMember } from "./http/member-context.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { createAuthService } from "./modules/auth/auth.service.js";
+import { publicRoutes } from "./modules/public/public.routes.js";
+import { createPublicService } from "./modules/public/public.service.js";
 import { spacesRoutes } from "./modules/spaces/spaces.routes.js";
 import { createSpacesService } from "./modules/spaces/spaces.service.js";
 import * as members from "./modules/workspaces/members.repo.js";
@@ -23,7 +25,12 @@ import * as members from "./modules/workspaces/members.repo.js";
 export interface AppOptions {
   config: Pick<
     Config,
-    "WEB_DIST_DIR" | "WIDGET_DIST_DIR" | "APP_ORIGIN" | "SESSION_TTL_DAYS" | "AUTH_RATE_LIMIT_MAX"
+    | "WEB_DIST_DIR"
+    | "WIDGET_DIST_DIR"
+    | "APP_ORIGIN"
+    | "SESSION_TTL_DAYS"
+    | "AUTH_RATE_LIMIT_MAX"
+    | "SUBMISSION_RATE_LIMIT_MAX"
   >;
   logger: Logger;
   prisma: PrismaClient;
@@ -74,6 +81,12 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
   );
   tenant.use("/spaces", spacesRoutes(createSpacesService(prisma)));
   api.use("/workspaces/:workspaceId", tenant);
+  // Public, untenanted: the Space is found by its global slug, and every identifier on the stored
+  // row comes from that lookup, never from the request.
+  api.use(
+    "/public",
+    publicRoutes(createPublicService(prisma), submissionLimiter(config.SUBMISSION_RATE_LIMIT_MAX)),
+  );
   registerRoutes?.(api);
   app.use("/api/v1", api);
 

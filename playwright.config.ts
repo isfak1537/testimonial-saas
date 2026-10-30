@@ -19,7 +19,7 @@ export default defineConfig({
     command: "node apps/api/dist/server.js",
     url: `${baseURL}/api/v1/health`,
     // The default limiter (10 sign-ups/log-ins per 15 minutes per IP) would 429 these suites.
-    env: { AUTH_RATE_LIMIT_MAX: "1000" },
+    env: { AUTH_RATE_LIMIT_MAX: "1000", SUBMISSION_RATE_LIMIT_MAX: "1000" },
     reuseExistingServer: !process.env["CI"],
     timeout: 60_000,
   },

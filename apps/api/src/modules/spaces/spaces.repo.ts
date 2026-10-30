@@ -55,3 +55,21 @@ export async function archiveActiveSpace(
   });
   return count;
 }
+
+/**
+ * The one lookup that is not tenant-scoped: public visitors only know the global slug (FR-COL-01).
+ * Archived Spaces are invisible. Returns the fields the public flow needs, nothing else.
+ */
+export function findActiveSpaceBySlug(db: Db, slug: string) {
+  return db.space.findFirst({
+    where: { slug, archivedAt: null },
+    select: {
+      id: true,
+      workspaceId: true,
+      name: true,
+      headline: true,
+      message: true,
+      prompts: true,
+    },
+  });
+}

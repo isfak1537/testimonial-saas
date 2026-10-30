@@ -7,6 +7,7 @@ describe("loadConfig auth settings", () => {
     expect(config.APP_ORIGIN).toBe("http://localhost:3000");
     expect(config.SESSION_TTL_DAYS).toBe(7);
     expect(config.AUTH_RATE_LIMIT_MAX).toBe(10);
+    expect(config.SUBMISSION_RATE_LIMIT_MAX).toBe(5);
   });
 
   it("requires APP_ORIGIN in production", () => {
@@ -55,5 +56,14 @@ describe("loadConfig auth settings", () => {
     const config = loadConfig({ AUTH_RATE_LIMIT_MAX: "500", SESSION_TTL_DAYS: "3" });
     expect(config.AUTH_RATE_LIMIT_MAX).toBe(500);
     expect(config.SESSION_TTL_DAYS).toBe(3);
+  });
+});
+
+describe("loadConfig submission limit", () => {
+  it("is configurable and bounded", () => {
+    expect(loadConfig({ SUBMISSION_RATE_LIMIT_MAX: "1000" }).SUBMISSION_RATE_LIMIT_MAX).toBe(1000);
+    expect(() => loadConfig({ SUBMISSION_RATE_LIMIT_MAX: "0" })).toThrow(
+      /SUBMISSION_RATE_LIMIT_MAX/,
+    );
   });
 });

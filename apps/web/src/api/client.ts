@@ -2,9 +2,12 @@ import type {
   CreateSpaceBody,
   LoginBody,
   MeResponse,
+  PublicFormDto,
   SignupBody,
   SpaceDto,
   SpaceListResponse,
+  SubmissionReceipt,
+  SubmitTestimonialBody,
   UpdateSpaceBody,
 } from "@testimonial-saas/shared";
 
@@ -127,4 +130,12 @@ export const api = {
       `/workspaces/${encodeURIComponent(workspaceId)}/spaces/${encodeURIComponent(spaceId)}/archive`,
       { method: "POST" },
     ),
+
+  getPublicForm: (slug: string) =>
+    request<PublicFormDto>(`/public/spaces/${encodeURIComponent(slug)}/form`),
+  submitTestimonial: (slug: string, body: SubmitTestimonialBody) =>
+    request<SubmissionReceipt>(`/public/spaces/${encodeURIComponent(slug)}/testimonials`, {
+      method: "POST",
+      body,
+    }),
 };

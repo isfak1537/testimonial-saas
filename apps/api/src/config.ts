@@ -41,6 +41,8 @@ const envSchema = z
     SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
     // Per IP and 15 minutes, for sign-up and log-in together. Raised only in test/E2E config.
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(10),
+    // Per IP and 10 minutes, for public testimonial submissions (FR-COL-07). Raised only in test/E2E config.
+    SUBMISSION_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(5),
   })
   .refine((env) => env.NODE_ENV !== "production" || env.APP_ORIGIN !== undefined, {
     path: ["APP_ORIGIN"],

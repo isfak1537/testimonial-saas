@@ -19,3 +19,10 @@ export type {
   SpaceListResponse,
   UpdateSpaceBody,
 } from "./contracts/spaces.js";
+export { CONSENT_TEMPLATES, CURRENT_CONSENT_VERSION, renderConsentText } from "./consent.js";
+export { submitTestimonialBody } from "./contracts/public.js";
+export type {
+  PublicFormDto,
+  SubmissionReceipt,
+  SubmitTestimonialBody,
+} from "./contracts/public.js";
