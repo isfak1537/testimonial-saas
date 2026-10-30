@@ -1,13 +1,22 @@
 import path from "node:path";
 import express from "express";
+import type { Logger } from "pino";
+import type { Config } from "./config.js";
+import { apiNotFound, errorHandler, fallbackErrorHandler } from "./http/error-handler.js";
+import { jsonBody } from "./http/json-body.js";
+import { requestId } from "./http/request-id.js";
+import { requestLogger } from "./http/request-logger.js";
+import { securityHeaders } from "./http/security-headers.js";
 
 export interface AppOptions {
-  webDistDir: string;
-  widgetDistDir: string;
+  config: Pick<Config, "WEB_DIST_DIR" | "WIDGET_DIST_DIR">;
+  logger: Logger;
+  /** Lets tests mount extra routes on `/api/v1`; production code passes nothing. */
+  registerRoutes?: (api: express.Router) => void;
 }
 
 // Client-side routes served by the SPA. Anything else gets the SPA's
-// not-found page with a real 404 status. Keep in sync with apps/web/src/router.tsx.
+// not-found page with a real 404 status. Keep in sync with apps/web/src/App.tsx.
 const SPA_ROUTES: readonly RegExp[] = [
   /^\/$/,
   /^\/login\/?$/,
@@ -17,20 +26,28 @@ const SPA_ROUTES: readonly RegExp[] = [
   /^\/w\/[^/]+\/?$/,
 ];
 
-export function createApp({ webDistDir, widgetDistDir }: AppOptions): express.Express {
+export function createApp({ config, logger, registerRoutes }: AppOptions): express.Express {
+  const webDistDir = config.WEB_DIST_DIR;
+  const widgetDistDir = config.WIDGET_DIST_DIR;
   const app = express();
   app.disable("x-powered-by");
+  app.use(requestId, securityHeaders, requestLogger(logger));
 
   const api = express.Router();
+  // Authenticated JSON must not be cached by proxies; the public Wall will override per FR-WALL-04.
+  api.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
+  api.use(jsonBody);
   api.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
+  registerRoutes?.(api);
   app.use("/api/v1", api);
 
-  // Placeholder JSON 404 for unknown API routes; the full error envelope arrives in I01.
-  app.use("/api", (_req, res) => {
-    res.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found" } });
-  });
+  // Unknown API routes and every error thrown under /api get the JSON envelope.
+  app.use("/api", apiNotFound, errorHandler(logger));
 
   app.use("/embed", express.static(widgetDistDir, { index: false, maxAge: "5m" }), (_req, res) => {
     res.status(404).type("text/plain").send("Not found");
@@ -62,6 +79,8 @@ export function createApp({ webDistDir, widgetDistDir }: AppOptions): express.Ex
       }
     });
   });
+
+  app.use(fallbackErrorHandler(logger));
 
   return app;
 }

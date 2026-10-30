@@ -5,7 +5,7 @@ import { createLogger } from "./logger.js";
 const config = loadConfig();
 const logger = createLogger(config.LOG_LEVEL);
 
-const app = createApp({ webDistDir: config.WEB_DIST_DIR, widgetDistDir: config.WIDGET_DIST_DIR });
+const app = createApp({ config, logger });
 
 const server = app.listen(config.PORT, () => {
   logger.info({ port: config.PORT, env: config.NODE_ENV }, "api listening");

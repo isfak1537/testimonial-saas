@@ -4,6 +4,7 @@ import path from "node:path";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
+import { createLogger } from "../src/logger.js";
 
 let fixtureDir: string;
 let app: ReturnType<typeof createApp>;
@@ -17,7 +18,10 @@ beforeAll(async () => {
   await writeFile(path.join(webDistDir, "index.html"), "<!doctype html><title>spa</title>");
   await writeFile(path.join(webDistDir, "assets", "index-abc123.js"), "console.log(1)");
   await writeFile(path.join(widgetDistDir, "widget.v1.js"), "(function(){})()");
-  app = createApp({ webDistDir, widgetDistDir });
+  app = createApp({
+    config: { WEB_DIST_DIR: webDistDir, WIDGET_DIST_DIR: widgetDistDir },
+    logger: createLogger("silent"),
+  });
 });
 
 afterAll(async () => {

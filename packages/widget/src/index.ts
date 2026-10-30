@@ -1,5 +1,5 @@
 // Embed loader. I00 only mounts an isolated Shadow DOM root on each container;
-// fetching and rendering published testimonials arrives in I18/I19.
+// fetching and rendering published testimonials arrives in I09.
 
 const CONTAINER_ATTRIBUTE = "data-testimonial-widget";
 
