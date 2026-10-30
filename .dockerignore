@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+apps/api/src/generated
+.git
+.github
+.claude
+docs
+e2e
+playwright-report
+test-results
+blob-report
+coverage
+.env
+.env.*
+!.env.example
+**/.DS_Store

@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    # Feature branches get CI before a PR exists; main runs after every merge.
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # One group per workflow, event and ref, so a branch push and its PR run never cancel each
+  # other. Superseded runs are cancelled everywhere except main, where every commit keeps a result.
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build, widget size
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # Checks every path in the Git index (tracked and staged), not the working tree, so an
+      # ignored local .env never fails CI. Prints escaped paths only, never file contents.
+      - name: Guard against tracked .env files and confidential requirement documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          index_list="$(mktemp)"
+          git ls-files -z --cached > "$index_list"
+          found=0
+          while IFS= read -r -d '' path; do
+            name="${path##*/}"
+            lower="${path,,}"
+            reason=""
+            if [[ "$name" == ".env" || ("$name" == .env.* && "$name" != ".env.example") ]]; then
+              reason="environment file"
+            elif [[ "$lower" == docs/requirements/*.docx ]]; then
+              reason="confidential requirements document"
+            fi
+            if [[ -n "$reason" ]]; then
+              # %q escapes spaces, newlines and control characters, so a path cannot inject
+              # workflow commands or split into misleading lines.
+              printf '  - %q (%s)\n' "$path" "$reason"
+              found=1
+            fi
+          done < "$index_list"
+          rm -f "$index_list"
+          if [[ "$found" -ne 0 ]]; then
+            echo "::error::Prohibited files are tracked by Git (paths listed above). Remove them from the index."
+            exit 1
+          fi
+          echo "No prohibited files are tracked."
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      # pnpm comes from the "packageManager" field; fail if anything else is on PATH.
+      - name: Check pnpm matches the packageManager pin
+        run: |
+          expected="$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")"
+          actual="$(pnpm --version)"
+          echo "pnpm expected $expected, got $actual"
+          [ "$actual" = "$expected" ]
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+  e2e:
+    name: Landing page E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Official Playwright image, pinned to the same version as @playwright/test. It ships
+    # Node 24 and the browsers (in /ms-playwright), so no setup-node step is needed here.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v7
+      - name: Show container user, HOME and Node version
+        run: |
+          id
+          echo "HOME=$HOME"
+          node --version
+          node -e "process.exit(process.versions.node.startsWith('24.') ? 0 : 1)"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docker:
+    name: Docker image + toolchain check (linux/amd64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose up -d --build --wait --wait-timeout 180
+      - run: docker compose run --rm api pnpm toolchain:check
+      - name: Check health, web app and widget responses from the container
+        run: |
+          curl -fsS http://localhost:3000/api/v1/health
+          echo
+          curl -fsS http://localhost:3000/ | grep -q '<div id="root"></div>'
+          echo "/ serves the web app"
+          curl -fsS -o /dev/null -w '%{content_type}\n' http://localhost:3000/embed/widget.v1.js \
+            | grep -q javascript
+          echo "/embed/widget.v1.js serves JavaScript"
+      - if: always()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down -v

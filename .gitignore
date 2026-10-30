@@ -1,0 +1,29 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+apps/api/src/generated/
+
+# Environment files (copy .env.example to .env; never commit real values)
+.env
+.env.*
+!.env.example
+
+# Confidential requirements drafts — keep out of Git until repository privacy is confirmed
+docs/requirements/*.docx
+docs/requirements/**/*.docx
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Local agent settings
+.claude/settings.local.json

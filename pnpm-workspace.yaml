@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Dependency build scripts are denied unless listed here as true.
+# argon2 loads its bundled prebuilt binaries (linux-arm64, linux-x64, darwin-arm64), so its
+# from-source build script is not needed. esbuild (used by tsx) gets its binary from a
+# platform-specific optional dependency. Prisma's scripts fetch the engine binaries the CLI uses.
+allowBuilds:
+  argon2: false
+  esbuild: false
+  prisma: true
+  "@prisma/engines": true
