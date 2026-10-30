@@ -11,6 +11,9 @@
   --color-banner-text: #5c4300;
   --color-skeleton: #dfe3e9;
   --color-focus: #2f4fd8;
+  --color-error: #b42318;
+  --color-error-bg: #fef3f2;
+  --color-field-border: #6b7280;
 
   --radius: 10px;
   --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 12px rgb(16 24 40 / 6%);

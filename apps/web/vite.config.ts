@@ -17,6 +17,9 @@ export default defineConfig({
     conditions: ["source"],
   },
   server: {
+    // Matches APP_ORIGIN=http://localhost:5173 when the API runs next to the Vite dev server.
+    port: 5173,
+    strictPort: true,
     proxy: {
       "/api": "http://localhost:3000",
       "/embed": "http://localhost:3000",

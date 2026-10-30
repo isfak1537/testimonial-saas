@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router";
+import AuthLayout from "./auth/AuthProvider";
 
 // Each public surface is its own chunk, so the landing page never loads dashboard,
 // form or Wall code. Keep the route list in sync with SPA_ROUTES in apps/api/src/app.ts.
@@ -16,9 +17,12 @@ export function App() {
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<AuthPage mode="login" />} />
-          <Route path="/signup" element={<AuthPage mode="signup" />} />
-          <Route path="/app/*" element={<AppSurface />} />
+          {/* Only these routes mount AuthProvider, so the landing page never calls /auth/me. */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<AuthPage mode="login" />} />
+            <Route path="/signup" element={<AuthPage mode="signup" />} />
+            <Route path="/app/*" element={<AppSurface />} />
+          </Route>
           <Route path="/c/:slug" element={<CollectSurface />} />
           <Route path="/w/:slug" element={<WallSurface />} />
           <Route path="*" element={<NotFoundPage />} />

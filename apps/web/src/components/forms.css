@@ -1,0 +1,72 @@
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field label,
+.field legend {
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius);
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.field-hint {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.field-error {
+  color: var(--color-error);
+  font-size: 0.9rem;
+}
+
+.error-banner {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-danger {
+  background: var(--color-error);
+  color: var(--color-on-primary);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}

@@ -133,7 +133,7 @@ test.describe("surface routing", () => {
   const SURFACES = [
     { path: "/login", testId: "surface-login", status: 200 },
     { path: "/signup", testId: "surface-signup", status: 200 },
-    { path: "/app", testId: "surface-app", status: 200 },
+    { path: "/app", testId: "surface-login", status: 200 }, // logged out: redirected to /login
     { path: "/c/x", testId: "surface-collect", status: 200 },
     { path: "/w/x", testId: "surface-wall", status: 200 },
     { path: "/does-not-exist", testId: "surface-not-found", status: 404 },
