@@ -40,7 +40,8 @@ for (const viewport of VIEWPORTS) {
       for (const testId of SECTIONS) {
         await expect(page.getByTestId(testId)).toBeAttached();
       }
-      await expect(page.getByTestId("dev-banner")).toContainText("Development preview");
+      await expect(page.getByTestId("dev-banner")).toHaveCount(0);
+      await expect(page.locator("body")).not.toContainText(/under active development|carousel/i);
 
       // Hero heading and primary call to action are visible without scrolling.
       const hero = page.getByTestId("landing-hero");

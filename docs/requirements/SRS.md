@@ -46,7 +46,7 @@ points to tune, not measured facts.
 | FR-AUTH-03 | Sign-up with an existing email shall return `409 EMAIL_TAKEN` with `details: [{ "path": "email", "message": … }]`. *(Accepted trade-off: reveals that an email is registered.)* |
 | FR-AUTH-04 | Log-in shall return the same `401 INVALID_CREDENTIALS` for an unknown email and a wrong password, and shall run a password hash comparison in both cases. |
 | FR-AUTH-05 | Passwords shall be hashed with argon2id. Plain passwords shall never be logged or stored. |
-| FR-AUTH-06 | A successful sign-up or log-in shall create a server-side session and set cookie `sid` (HttpOnly, SameSite=Lax, Path=/, Max-Age = `SESSION_TTL_DAYS` days, default 7). `Secure` is set only when `APP_ORIGIN` is `https`. Logging in while already logged in deletes the old session and creates a new one. |
+| FR-AUTH-06 | A successful sign-up or log-in shall create a server-side session and set cookie `sid` (HttpOnly, SameSite=Lax, Path=/, Max-Age = `SESSION_TTL_DAYS` days, default 7). `Secure` is set only when `APP_ORIGIN` is `https`. Logging in or signing up while already logged in deletes the old session (sign-up only after the account is created, so a rejected sign-up keeps it) and creates a new one. |
 | FR-AUTH-07 | The session token shall be 32 random bytes (base64url). Only its SHA-256 hash is stored. Sessions expire `SESSION_TTL_DAYS` (default 7) days after creation; an expired session is treated as missing (`401`). |
 | FR-AUTH-08 | Log-out shall delete the session row and clear the cookie. Return 204. |
 | FR-AUTH-09 | `GET /auth/me`, and the bodies of a successful sign-up (201) and log-in (200), shall return `{ "user": { "id", "email", "displayName" }, "workspace": { "id", "name" }, "role" }`, built by an allowlist mapper; `me` without a valid session returns 401. |
@@ -77,9 +77,9 @@ points to tune, not measured facts.
 | ID | Requirement |
 |---|---|
 | FR-COL-01 | `GET /public/spaces/:slug/form` shall return only: Space name, headline, message, prompts, and the current consent `{version, text}`. The `text` is rendered with the Space name; the SHA-256 pin (FR-COL-08) covers the unrendered template. Archived, unknown or malformed slug → the same 404. |
-| FR-COL-02 | `POST /public/spaces/:slug/testimonials` shall accept: authorName (1–80), authorTitle (0–120, optional), authorEmail (optional, valid email, max 254), rating (integer 1–5), content (10–2000 after trimming), consent (must be `true`), consentVersion, website (honeypot, ≤200 chars). The body is strict: unknown or server-owned keys (`workspaceId`, `spaceId`, `moderationStatus`, `publishedAt`, consent dates, ids) → 422. A blank authorTitle is stored as null; authorEmail is omitted or valid. Success is `201 {status:"received"}`. |
+| FR-COL-02 | `POST /public/spaces/:slug/testimonials` shall accept: authorName (1–80), authorTitle (0–120, optional), authorEmail (optional, valid email, max 254), rating (integer 1–5), content (10–2000 after trimming), consent (must be `true`), consentVersion, leaveBlank (honeypot, ≤200 chars; a neutral name so browser autofill does not fill it). The body is strict: unknown or server-owned keys (`workspaceId`, `spaceId`, `moderationStatus`, `publishedAt`, consent dates, ids) → 422. A blank authorTitle is stored as null; authorEmail is omitted or valid. Success is `201 {status:"received"}`. |
 | FR-COL-03 | If `consentVersion` differs from the current version → `409 CONSENT_VERSION_OUTDATED` (UI asks the visitor to reload). |
-| FR-COL-04 | If the honeypot `website` is non-empty, the API shall return the same 201 body as a real submission and store nothing. Evaluation order: validation (422) → Space lookup (404) → honeypot → consent version (409) → store. |
+| FR-COL-04 | If the honeypot `leaveBlank` is non-empty, the API shall return the same 201 body as a real submission and store nothing. Evaluation order: validation (422) → Space lookup (404) → honeypot → consent version (409) → store. |
 | FR-COL-05 | A stored testimonial shall have `moderationStatus = PENDING`, `publishedAt = NULL`, `consentVersion` = submitted version, `consentGrantedAt = now()`. |
 | FR-COL-06 | Invalid input → `422 VALIDATION_FAILED` with field errors; nothing is stored. |
 | FR-COL-07 | Submissions shall be rate limited per IP by a limiter that runs before validation and any database access (honeypot hits and invalid bodies spend budget; `429 RATE_LIMITED` with `Retry-After`). The maximum is `SUBMISSION_RATE_LIMIT_MAX` (default 5 per 10 minutes) and is raised only in test and E2E configuration. The form `GET` is not limited. Submissions also require the `Origin` header of SEC-02. |
@@ -120,18 +120,18 @@ Consent text v1 (`2026-10-30.v1`):
 | ID | Requirement |
 |---|---|
 | FR-WID-01 | Embed snippet: `<div data-testimonial-widget data-space="{slug}" data-theme="light"></div>` + `<script async src="{origin}/embed/widget.v1.js"></script>`. |
-| FR-WID-02 | The loader shall find every container, attach a Shadow DOM root, fetch the Wall endpoint from the script's own origin, and render items. |
+| FR-WID-02 | The loader shall capture the script's own origin synchronously, wait for `DOMContentLoaded` if the document is still loading, find every container, attach a Shadow DOM root, fetch one page of the Wall endpoint (`limit` = `data-limit`, no credentials, 10 s timeout) from that origin, and render items. Mounting is idempotent: a container is rendered exactly once, however many times the script is included. A container without `data-space` is ignored. |
 | FR-WID-03 | Text shall be rendered only with `textContent` / `createTextNode`. `innerHTML` with API data is forbidden. |
-| FR-WID-04 | It shall show a loading state, an empty state ("No testimonials yet"), and on error render nothing visible and never throw into the host page. |
-| FR-WID-05 | `data-theme` accepts `light` or `dark` (default `light`); `data-limit` 1–50 (default 12). |
-| FR-WID-06 | Bundle shall stay under 30 KB gzipped (existing CI check). Script served with `Cache-Control: public, max-age=300`. |
-| FR-WID-07 | The dashboard Embed tab shall show the snippet with a copy button and a live preview. |
+| FR-WID-04 | It shall show a loading state, an empty state ("No testimonials yet"), and on any error (network, timeout, non-2xx including 404, unexpected response shape) render nothing visible, call no `console` method, and never throw into the host page. Only the allowlisted item keys of FR-WALL-03 are read from the response. |
+| FR-WID-05 | `data-theme` accepts `light` or `dark` (default `light`); `data-limit` 1–50 (default 12). Any other value falls back to the default. |
+| FR-WID-06 | Bundle shall stay under 30 KB gzipped (existing CI check) and import nothing at runtime from `packages/shared`. Script served with `Cache-Control: public, max-age=300` and `Cross-Origin-Resource-Policy: cross-origin`; the Wall route sends the same CORP header (also on 404, 422, 429). Styles are applied with a constructed stylesheet, so a host page's `style-src` does not remove them. |
+| FR-WID-07 | The dashboard Embed tab shall show the snippet with a copy button and a live preview (the real widget script). The theme and `data-limit` can be chosen and update both. An archived Space shows no snippet. |
 
 ### 3.8 Operations (I10)
 
 | ID | Requirement |
 |---|---|
-| FR-OPS-01 | `pnpm -F @testimonial-saas/api purge:deleted` shall hard-delete testimonials with `deletedAt` older than 30 days and print the count. Dry-run by default; `--confirm` to delete. |
+| FR-OPS-01 | `pnpm -F @testimonial-saas/api purge:deleted` shall hard-delete testimonials with `deletedAt` strictly older than 30 days and sessions whose `expiresAt` has passed. Before changing anything, in both modes, it prints the target database name (never credentials) and both counts. Dry-run by default; the exact flag `--confirm` deletes; any other argument is an error. Needs `pnpm build` first (runs `node dist/scripts/purge-deleted.js`). Audit rows are kept. |
 | FR-OPS-02 | `GET /api/v1/health` shall also report database reachability (`{status, db}`); 503 if the database is down. |
 
 ## 4. Data model

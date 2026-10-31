@@ -44,7 +44,7 @@ describe("submitTestimonialBody", () => {
     expect(fails({ ...valid, authorEmail: "nope" })).toBe(true);
     expect(fails({ ...valid, authorEmail: `${"a".repeat(250)}@b.co` })).toBe(true);
     expect(fails({ ...valid, authorEmail: "" })).toBe(true);
-    expect(fails({ ...valid, website: "x".repeat(201) })).toBe(true);
+    expect(fails({ ...valid, leaveBlank: "x".repeat(201) })).toBe(true);
   });
 
   it("rejects unknown and server-owned keys", () => {

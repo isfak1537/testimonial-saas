@@ -3,9 +3,8 @@ import { Link } from "react-router";
 import { PRODUCT_NAME } from "@testimonial-saas/shared";
 import "./landing.css";
 
-// Copy rule: describe only planned MVP capabilities, never customers, logos,
-// integrations, pricing or usage numbers. The development banner stays until I10
-// confirms every claim matches shipped behaviour.
+// Copy rule: describe only what the MVP does, never customers, logos, integrations,
+// pricing or usage numbers, and never a legal-compliance claim.
 
 const FEATURES = [
   {
@@ -17,8 +16,8 @@ const FEATURES = [
     body: "Every submission starts private. Approve or reject it, then publish only approved testimonials with consent.",
   },
   {
-    title: "Search, filter and tag",
-    body: "Keep submissions organised in one inbox so the right testimonial is easy to find.",
+    title: "One inbox for every submission",
+    body: "See all submissions in one place and filter by status to find what still needs your review.",
   },
   {
     title: "Public Wall page",
@@ -26,11 +25,11 @@ const FEATURES = [
   },
   {
     title: "Embeddable widgets",
-    body: "Add a grid or carousel of published testimonials to your own site with a small script.",
+    body: "Add a grid of published testimonials to your own site with a small script.",
   },
   {
-    title: "Team roles",
-    body: "Add teammates who have an account as Admin, Editor or Viewer, each with clear permissions.",
+    title: "Your own workspace",
+    body: "Each account has a private workspace. Your Spaces and submissions are never visible to other accounts.",
   },
 ] as const;
 
@@ -159,13 +158,6 @@ export default function LandingPage() {
 
   return (
     <div className="landing">
-      <div className="dev-banner" role="note" data-testid="dev-banner">
-        <div className="container">
-          <strong>Development preview.</strong> {PRODUCT_NAME} is under active development; the
-          features below are planned for the first release and are not all available yet.
-        </div>
-      </div>
-
       <SiteHeader />
 
       <main>

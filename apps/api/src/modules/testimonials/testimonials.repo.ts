@@ -172,3 +172,15 @@ export async function applyTestimonialAction(
   })();
   return count;
 }
+
+// Maintenance (FR-OPS-01). Deliberately not tenant-scoped: it runs from the CLI, not a request.
+
+/** Soft-deleted testimonials whose `deletedAt` is strictly before `cutoff`. */
+export function countDeletedBefore(db: Db, cutoff: Date): Promise<number> {
+  return db.testimonial.count({ where: { deletedAt: { lt: cutoff } } });
+}
+
+export async function deleteDeletedBefore(db: Db, cutoff: Date): Promise<number> {
+  const { count } = await db.testimonial.deleteMany({ where: { deletedAt: { lt: cutoff } } });
+  return count;
+}

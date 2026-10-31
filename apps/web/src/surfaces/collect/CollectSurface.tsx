@@ -89,7 +89,7 @@ function Form({ slug, form }: { slug: string; form: PublicFormDto }) {
   const [rating, setRating] = useState<number | null>(null);
   const [content, setContent] = useState("");
   const [consent, setConsent] = useState(false);
-  const [website, setWebsite] = useState("");
+  const [leaveBlank, setLeaveBlank] = useState("");
   const [errors, setErrors] = useState<FormErrors>({ fields: {}, banner: null });
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
@@ -123,7 +123,7 @@ function Form({ slug, form }: { slug: string; form: PublicFormDto }) {
     };
     if (authorTitle.trim()) body["authorTitle"] = authorTitle;
     if (authorEmail.trim()) body["authorEmail"] = authorEmail;
-    if (website) body["website"] = website;
+    if (leaveBlank) body["leaveBlank"] = leaveBlank;
     try {
       await api.submitTestimonial(slug, body as unknown as SubmitTestimonialBody);
       setDone(true);
@@ -246,14 +246,14 @@ function Form({ slug, form }: { slug: string; form: PublicFormDto }) {
           </div>
           {/* Honeypot: people never see or reach this field (FR-COL-04). */}
           <div className="hp-field" aria-hidden="true">
-            <label htmlFor="website">Website</label>
+            <label htmlFor="leaveBlank">Leave this field empty</label>
             <input
-              id="website"
-              name="website"
+              id="leaveBlank"
+              name="leaveBlank"
               tabIndex={-1}
               autoComplete="off"
-              value={website}
-              onChange={(event) => setWebsite(event.target.value)}
+              value={leaveBlank}
+              onChange={(event) => setLeaveBlank(event.target.value)}
             />
           </div>
           <div className="collect-actions">

@@ -66,7 +66,8 @@ apps/api/src/
     public/              public.routes.ts, public.service.ts, public.mappers.ts
     audit/               audit.repo.ts
   scripts/
-    purge-deleted.ts
+    purge.ts             counts + deletes (testimonials deleted > 30 days ago, expired sessions)
+    purge-deleted.ts     CLI: dry-run by default, --confirm to delete (FR-OPS-01)
 apps/api/test/
   helpers/               test-db.ts (migrate + truncate), factories.ts, test-config.ts, auth-app.ts (app + captured logs, signup/cookie helpers)
   unit/                  no database
@@ -88,7 +89,8 @@ packages/shared/src/
   contracts/             Zod schemas + inferred types: auth.ts, spaces.ts, testimonials.ts, public.ts, errors.ts
 
 packages/widget/src/
-  index.ts               finds containers, mounts (exists)
+  index.ts               finds containers, mounts once each
+  options.ts             data-attribute parsing (theme, limit, slug)
   api.ts                 fetch Wall JSON from the script's origin
   render.ts              DOM building with textContent only
   styles.ts              CSS string for the Shadow root (light/dark)

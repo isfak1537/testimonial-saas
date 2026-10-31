@@ -39,6 +39,12 @@ test.describe("Public collection form", () => {
     await expect(form.getByText("I agree that Acme may publish")).toBeVisible();
     await expectNoBlockingViolations(form);
 
+    // Honeypot: neutral name, no autofill, unreachable by keyboard and hidden from assistive tech.
+    const honeypot = form.locator('input[name="leaveBlank"]');
+    await expect(honeypot).toHaveAttribute("autocomplete", "off");
+    await expect(honeypot).toHaveAttribute("tabindex", "-1");
+    await expect(form.locator('.hp-field[aria-hidden="true"]')).toHaveCount(1);
+
     await form.getByLabel("Your name").fill("Grace");
     await form.getByRole("radio", { name: "5 out of 5" }).check();
     await form.getByLabel("Your testimonial").fill("<b>Brilliant</b> service, thank you!");

@@ -11,7 +11,7 @@ export const submitTestimonialBody = z.strictObject({
   consent: z.literal(true, "Consent is required"),
   consentVersion: z.string().min(1).max(40),
   // Honeypot (FR-COL-04): real visitors never see it, so it stays empty.
-  website: z.string().max(200).optional(),
+  leaveBlank: z.string().max(200).optional(),
 });
 
 export type SubmitTestimonialBody = z.infer<typeof submitTestimonialBody>;

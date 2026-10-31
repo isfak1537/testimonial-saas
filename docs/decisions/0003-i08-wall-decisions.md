@@ -42,5 +42,5 @@ publishedAt` (FR-WALL-03 lists `id`). The top level is `space{name, headline}`,
   I09 must add a test for that.
 - **I09:** the widget fetches the Wall from the script's own origin; the CORS `*` header is for
   third-party pages that call the API directly.
-- **I10:** the Wall limiter is per process and per IP, like the others; revisit with the proxy
+- **I10 (deferred to I11, ADR 0005):** the Wall limiter is per process and per IP, like the others; revisit with the proxy
   decision (`trust proxy`, ADR 0001).

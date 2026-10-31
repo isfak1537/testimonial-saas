@@ -102,9 +102,21 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
   // Unknown API routes and every error thrown under /api get the JSON envelope.
   app.use("/api", apiNotFound, errorHandler(logger));
 
-  app.use("/embed", express.static(widgetDistDir, { index: false, maxAge: "5m" }), (_req, res) => {
-    res.status(404).type("text/plain").send("Not found");
-  });
+  // FR-WID-06. Third-party pages load this script, so it must stay embeddable even if a global
+  // `Cross-Origin-Resource-Policy` is added later (ADR 0003, ADR 0004).
+  app.use(
+    "/embed",
+    (_req, res, next) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      // Public file, no credentials: also loadable with <script crossorigin>.
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      next();
+    },
+    express.static(widgetDistDir, { index: false, maxAge: "5m" }),
+    (_req, res) => {
+      res.status(404).type("text/plain").send("Not found");
+    },
+  );
 
   // Vite emits content-hashed file names under /assets, so they can be cached forever.
   app.use(

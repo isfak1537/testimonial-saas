@@ -42,7 +42,7 @@ export function createPublicService(db: Db) {
       const space = await findActiveSpaceBySlug(db, slug);
       if (!space) throw notFound();
       const receipt: SubmissionReceipt = { status: "received" };
-      if (body.website) return receipt;
+      if (body.leaveBlank) return receipt;
       if (body.consentVersion !== CURRENT_CONSENT_VERSION) {
         throw new AppError(
           409,

@@ -147,7 +147,7 @@ describe("POST /public/spaces/:slug/testimonials", () => {
     ["moderationStatus", { moderationStatus: "APPROVED" }],
     ["publishedAt", { publishedAt: new Date().toISOString() }],
     ["consentGrantedAt", { consentGrantedAt: new Date().toISOString() }],
-    ["oversized honeypot", { website: "x".repeat(201) }],
+    ["oversized honeypot", { leaveBlank: "x".repeat(201) }],
   ])("rejects %s with 422 and stores nothing", async (_name, patch) => {
     const res = await submit({ ...valid, ...patch });
     expect(res.status).toBe(422);
@@ -184,16 +184,22 @@ describe("POST /public/spaces/:slug/testimonials", () => {
 
   it("answers a filled honeypot with the normal 201 and stores nothing (FR-COL-04)", async () => {
     const real = await submit(valid);
-    const bot = await submit({ ...valid, website: "http://spam.example" });
+    const bot = await submit({ ...valid, leaveBlank: "http://spam.example" });
     expect(bot.status).toBe(201);
     expect(bot.body).toStrictEqual(real.body);
     expect(await prisma.testimonial.count()).toBe(1);
   });
 
+  it("no longer treats the old autofill-prone `website` key as the honeypot (strict body)", async () => {
+    const res = await submit({ ...valid, website: "http://example.test" });
+    expect(res.status).toBe(422);
+    expect(await prisma.testimonial.count()).toBe(0);
+  });
+
   it("answers unknown and archived Spaces with 404, even with the honeypot filled", async () => {
     await createSpace(prisma, workspaceId, { slug: "old-space", archivedAt: new Date() });
     for (const slug of ["nope-nope", "old-space"]) {
-      for (const extra of [{}, { website: "bot" }]) {
+      for (const extra of [{}, { leaveBlank: "bot" }]) {
         const res = await submit({ ...valid, ...extra }, slug);
         expect(res.status, slug).toBe(404);
       }
@@ -242,7 +248,7 @@ describe("POST /public/spaces/:slug/testimonials", () => {
       authorEmail: "secret.person@example.com",
       content: "needle-content-xyz",
     });
-    await submit({ ...valid, website: "needle-honeypot", authorEmail: "bad" });
+    await submit({ ...valid, leaveBlank: "needle-honeypot", authorEmail: "bad" });
     await submit({ ...valid, consentVersion: "old", authorEmail: "secret.person@example.com" });
     const output = logs();
     expect(output).not.toContain("secret.person");
@@ -270,7 +276,7 @@ describe("submission rate limit (FR-COL-07)", () => {
   it("runs before validation and the database: bad bodies and bots spend budget", async () => {
     const limited = authApp({ SUBMISSION_RATE_LIMIT_MAX: 5 });
     await submit({}, "acme", limited.app); // 422
-    await submit({ ...valid, website: "bot" }, "acme", limited.app); // honeypot
+    await submit({ ...valid, leaveBlank: "bot" }, "acme", limited.app); // honeypot
     await submit(valid, "nope-nope", limited.app); // 404
     await submit({ ...valid, consentVersion: "old" }, "acme", limited.app); // 409
     await submit(valid, "acme", limited.app); // 201

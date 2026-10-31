@@ -28,15 +28,16 @@ pnpm workspaces · TypeScript strict · Node 24 · pnpm 12 (corepack)
 
 ## Commands
 
-| Command                               | Purpose                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `pnpm verify`                         | lint, format check, build, typecheck, unit tests, widget size. **Run before every report.** |
-| `pnpm test:api -- <pattern>`          | API tests                                                                                   |
-| `pnpm db:test:up`                     | start throwaway test Postgres (port 54330)                                                  |
-| `pnpm test:e2e -- <spec>`             | Playwright against http://localhost:3000                                                    |
-| `docker compose up -d --build --wait` | full local stack (db + api on :3000)                                                        |
-| `pnpm -F @testimonial-saas/web dev`   | web with hot reload (proxies /api, /embed)                                                  |
-| `pnpm format`                         | Prettier write                                                                              |
+| Command                                                   | Purpose                                                                                            |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `pnpm verify`                                             | lint, format check, build, typecheck, unit tests, widget size. **Run before every report.**        |
+| `pnpm test:api -- <pattern>`                              | API tests                                                                                          |
+| `pnpm db:test:up`                                         | start throwaway test Postgres (port 54330)                                                         |
+| `pnpm test:e2e -- <spec>`                                 | Playwright against http://localhost:3000                                                           |
+| `docker compose up -d --build --wait`                     | full local stack (db + api on :3000)                                                               |
+| `pnpm -F @testimonial-saas/web dev`                       | web with hot reload (proxies /api, /embed)                                                         |
+| `pnpm format`                                             | Prettier write                                                                                     |
+| `pnpm -F @testimonial-saas/api purge:deleted [--confirm]` | Purge old soft-deleted testimonials and expired sessions (dry-run default; run `pnpm build` first) |
 
 ## Workflow (every increment)
 

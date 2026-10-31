@@ -4,10 +4,9 @@
 > `packages/shared/src/brand.ts`.
 
 A multi-tenant app for collecting customer testimonials, reviewing them before they go
-public, and publishing approved ones on a public Wall and embeddable widgets. It is built
-incrementally as a student project; this branch contains **increment I00** (foundation and
-marketing landing page) only. Sign-up, the dashboard, collection forms, Walls and widgets
-are placeholders until their increments land.
+public, and publishing approved ones on a public Wall and an embeddable widget. It is built
+incrementally as a student project; this branch contains the MVP (increments I00–I10).
+It is a local demo: there is no production deployment yet.
 
 ## Stack
 
@@ -17,7 +16,7 @@ PostgreSQL 16 + Prisma 7, Docker Compose, pnpm workspaces.
 ```
 apps/api          Express API; also serves the built web app and /embed/*
 apps/web          React SPA: / (landing), /login, /signup, /app/**, /c/:slug, /w/:slug
-packages/shared   Code shared by web and API (product name now; contracts later)
+packages/shared   Code shared by web and API (product name, Zod contracts, consent text)
 packages/widget   Embeddable widget: vanilla TypeScript + Shadow DOM, built to widget.v1.js
 e2e               Playwright end-to-end tests
 ```
@@ -37,9 +36,15 @@ e2e               Playwright end-to-end tests
 ## Getting started
 
 ```sh
-pnpm install
 docker compose up -d --build --wait   # db + api on http://localhost:3000
 ```
+
+Running the demo needs only Docker: the image installs dependencies and builds everything
+itself (`Dockerfile`), and applies database migrations on start. Run `pnpm install` on the host
+only for development, the tests and `pnpm verify`.
+
+To stop the stack run `docker compose down`. It keeps the database data. `docker compose down -v`
+also deletes the database data, so use it only when you want a reset.
 
 No `.env` is required: every setting has a local development default. To override values,
 copy `.env.example` to `.env`. Host ports are bound to `127.0.0.1`. The database ports
@@ -63,16 +68,77 @@ when you use the Vite dev server (set it in `.env`, then `docker compose up -d -
 
 The first Playwright run needs a browser: `pnpm exec playwright install chromium`.
 
-## Known limitations (I00)
+### Maintenance: purge
 
-- Only the landing page is real. Auth, dashboard, collection form and Wall routes show
-  placeholder pages; the widget mounts an empty Shadow DOM root.
-- The API has a health endpoint only. The standard error envelope, request IDs and request
-  logging arrive in I01; the database schema arrives in I02.
-- The API image keeps dev dependencies so the toolchain check and future migrations can run
-  in it. Slimming the image is deferred.
-- The public pages are a single-page app: content appears after JavaScript loads, and the
-  pages are not server-rendered for SEO.
+```sh
+pnpm build                                              # the script runs from compiled output
+DATABASE_URL=postgresql://testimonial:testimonial_dev@localhost:54320/testimonial \
+  pnpm -F @testimonial-saas/api purge:deleted            # dry-run: prints counts, deletes nothing
+DATABASE_URL=... pnpm -F @testimonial-saas/api purge:deleted --confirm
+# or inside the running stack:
+docker compose exec api pnpm -F @testimonial-saas/api purge:deleted [--confirm]
+```
+
+It first prints the target database name and the counts. `--confirm` hard-deletes testimonials
+that were deleted more than 30 days ago and sessions that have expired. Nothing else is touched.
+
+## Demo script
+
+Start the stack (see Getting started), open http://localhost:3000, then:
+
+1. **Sign up** (Get started) and create a **Space** with a slug such as `acme`.
+2. **Collect.** Copy the link from the Collection tab and open it in a private window.
+   Fill in the form, tick the consent box and send it. (Submissions are limited to 5 per
+   10 minutes per IP; that is by design.)
+3. **Review.** Back in the dashboard, open the Inbox: the item is Pending. Approve it, then Publish it.
+4. **Wall.** Open `/w/acme`: the testimonial is there.
+5. **Widget.** Copy the snippet from the Embed tab, then serve it from a different origin:
+   - Create an empty folder outside this repository, for example `~/embed-test`.
+   - In it, create `index.html` with the snippet in the body (your snippet has your Space slug):
+     ```html
+     <!doctype html>
+     <html>
+       <body>
+         <div data-testimonial-widget data-space="acme" data-theme="light"></div>
+         <script async src="http://localhost:3000/embed/widget.v1.js"></script>
+       </body>
+     </html>
+     ```
+   - In that folder run `python3 -m http.server 8000` and open http://localhost:8000.
+
+   The page (port 8000) and the API (port 3000) are different origins, which is the point of
+   the test. The same testimonial appears. Stop the server with Ctrl+C.
+
+6. **Unpublish** it in the Inbox and refresh the Wall: it is gone.
+7. **Isolation.** Sign up as a second user (another browser profile): they see none of the
+   first user's Spaces or testimonials.
+
+### Embedding and versioning
+
+The widget is `/embed/widget.v1.js`, cached for 5 minutes. A change that would break existing
+embeds ships as a new file (`widget.v2.js`); `v1` is never edited incompatibly.
+
+## Known limitations
+
+- **Spam defence is minimal:** a hidden honeypot field, a per-IP rate limit and moderation
+  (nothing is public until you approve and publish it). No CAPTCHA or email verification.
+- **Consent text is not auditable.** The text a visitor agreed to embeds the Space name, but only
+  the template version is stored. If a Space is renamed, the exact text can no longer be
+  reproduced. This is not a record that meets any legal standard, and the product makes no
+  legal-compliance claim.
+- **Sign-up reveals whether an email is registered** (it answers "already exists"). The per-IP
+  limiter slows enumeration; it does not prevent it.
+- **Wall requests can return 429** (120 per minute per IP) behind a shared NAT or on a page with
+  very many widgets; the widget then shows nothing.
+- **No `trust proxy` and no HTTPS yet.** The rate limiters see the socket address and the
+  session cookie is `Secure` only when `APP_ORIGIN` is https. Deployment is a later increment.
+- No password reset, email verification, team invites or roles; one owner per workspace.
+- Rate limiters are in memory, per process.
+- The API image keeps dev dependencies so the toolchain check and migrations can run in it.
+- The public pages are a single-page app: content appears after JavaScript loads and is not
+  server-rendered for SEO.
+- The I08 test that drops the publish guard can leave it dropped in the test database if the
+  test process is killed; recreate the test database (`docker compose down -v`, `pnpm db:test:up`).
 
 ## Project documents
 

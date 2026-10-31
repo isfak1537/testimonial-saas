@@ -54,6 +54,9 @@ describe("widget embed", () => {
     expect(res.status).toBe(200);
     expect(res.type).toMatch(/javascript/);
     expect(res.headers["cache-control"]).toBe("public, max-age=300");
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+    expect(res.headers["access-control-allow-origin"]).toBe("*");
+    expect(res.headers["x-content-type-options"]).toBe("nosniff");
   });
 
   it("returns 404 for unknown embed files", async () => {

@@ -246,10 +246,10 @@ that has hostile CSS (`* { color: red !important }`).
 
 Acceptance:
 
-- [ ] Widget renders published items; host CSS does not change them; widget CSS does not leak out
-- [ ] Network failure → nothing visible, no console errors thrown to the host
-- [ ] XSS payload renders as text
-- [ ] Size check still < 30 KB gzipped
+- [x] Widget renders published items; host CSS does not change them; widget CSS does not leak out
+- [x] Network failure → nothing visible, no console errors thrown to the host
+- [x] XSS payload renders as text
+- [x] Size check still < 30 KB gzipped
 
 ---
 
@@ -280,6 +280,9 @@ Acceptance (added after I06):
 
 - [ ] `trust proxy` is configured for the deployment (exact hop count, SEC-07) and the per-IP
       limiters (auth and public submission) are verified behind it: two clients get separate buckets
+
+- [ ] HSTS (`Strict-Transport-Security`, an I01 follow-up) is added once HTTPS is terminated for the deployment, with a test
+- [ ] `GET /public/spaces/:slug/form` has no limiter today; review all per-IP limiters (form, Wall, submission, auth) together with the proxy decision
 
 ## Later backlog (not scheduled)
 

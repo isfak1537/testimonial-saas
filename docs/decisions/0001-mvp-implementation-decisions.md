@@ -78,12 +78,12 @@ Found in the I02 security review; each is scheduled in the increment named.
 - **I07 (done, `modules/audit/audit.repo.ts`):** audit writers take `workspaceId` from the verified membership, never from input.
 - **I11:** use a separate migrator database role. Today the container runs migrations with the
   application's credentials.
-- **I10:** purge expired `Session` rows. I03 rejects them on read but never deletes them.
+- **I10 (done, ADR 0005):** purge expired `Session` rows. I03 rejects them on read but never deletes them.
 - **I11:** decide `trust proxy` (exact hop count, SEC-07) before any proxied deployment. Behind a
   proxy without it every client shares one rate-limit bucket (the proxy's IP).
 - **Accepted trade-off (I03):** sign-up returns `409 EMAIL_TAKEN`, so it reveals whether an email is
   registered (FR-AUTH-03). The per-IP limiter slows enumeration; it does not prevent it.
-- **I10:** sign-up does not invalidate a session the caller already holds (FR-AUTH-06 only requires
+- **I10 (done, ADR 0005):** sign-up did not invalidate a session the caller already holds (FR-AUTH-06 only requires
   replacement on log-in). Decide whether sign-up should delete it too.
 - **I04 (done, `db/unique-violation.ts`):** the slug `P2002` mapping must read `meta.driverAdapterError.cause.constraint`
   (`index` / `fields`), because with Prisma 7 and the pg adapter `meta.target` is absent. See
@@ -96,8 +96,8 @@ Found in the I02 security review; each is scheduled in the increment named.
   `consentVersion` (the template version). If the owner later renames the Space, the text a visitor
   agreed to can no longer be reproduced exactly. Storing the rendered text or the Space name at
   submission time is a schema change, deferred; revisit before any claim that consent is auditable.
-- **I10:** spam defence in I06 is the honeypot plus the per-IP limiter only (5 per 10 minutes). Stronger
+- **I10 (deferred, ADR 0005):** spam defence in I06 is the honeypot plus the per-IP limiter only (5 per 10 minutes). Stronger
   measures (CAPTCHA or proof of work, per-Space limits, email verification, moderation hints) belong to I10.
-- **I10:** the `website` honeypot can be filled by browser autofill or password managers. A real visitor
+- **I10 (renamed to `leaveBlank`, ADR 0005; no time check):** the `website` honeypot can be filled by browser autofill or password managers. A real visitor
   then gets a silent "Thank you" and nothing is stored. Fix: rename the field (an SRS FR-COL-02
   contract change) and add a time-to-submit check.

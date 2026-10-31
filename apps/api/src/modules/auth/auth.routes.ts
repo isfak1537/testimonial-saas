@@ -17,9 +17,13 @@ export function authRoutes(
   const router = Router();
   const needSession = requireSession(auth);
 
-  router.post("/signup", limiter, validate({ body: signupBody }), async (_req, res) => {
+  router.post("/signup", limiter, validate({ body: signupBody }), async (req, res) => {
     const { body } = res.locals["validated"] as { body: SignupBody };
-    const { me, token } = await auth.signup(body);
+    const current: unknown = req.cookies?.[SESSION_COOKIE];
+    const { me, token } = await auth.signup(
+      body,
+      typeof current === "string" ? current : undefined,
+    );
     setSessionCookie(res, config, token);
     res.status(201).json(me);
   });
