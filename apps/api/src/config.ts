@@ -43,6 +43,8 @@ const envSchema = z
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(10),
     // Per IP and 10 minutes, for public testimonial submissions (FR-COL-07). Raised only in test/E2E config.
     SUBMISSION_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(5),
+    // Per IP and minute, for public Wall reads (FR-WALL-05).
+    WALL_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(120),
   })
   .refine((env) => env.NODE_ENV !== "production" || env.APP_ORIGIN !== undefined, {
     path: ["APP_ORIGIN"],

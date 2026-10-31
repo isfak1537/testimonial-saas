@@ -3,6 +3,7 @@ import type {
   LoginBody,
   MeResponse,
   PublicFormDto,
+  PublicWallDto,
   SignupBody,
   SpaceDto,
   SpaceListResponse,
@@ -165,6 +166,10 @@ export const api = {
 
   getPublicForm: (slug: string) =>
     request<PublicFormDto>(`/public/spaces/${encodeURIComponent(slug)}/form`),
+  getPublicWall: (slug: string, cursor?: string) =>
+    request<PublicWallDto>(
+      `/public/spaces/${encodeURIComponent(slug)}/wall${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+    ),
   submitTestimonial: (slug: string, body: SubmitTestimonialBody) =>
     request<SubmissionReceipt>(`/public/spaces/${encodeURIComponent(slug)}/testimonials`, {
       method: "POST",

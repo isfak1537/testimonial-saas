@@ -108,11 +108,11 @@ Consent text v1 (`2026-10-30.v1`):
 
 | ID | Requirement |
 |---|---|
-| FR-WALL-01 | `GET /public/spaces/:slug/wall` shall return `{space: {name, headline}, testimonials: [...], nextCursor}`. |
-| FR-WALL-02 | It shall include only **public** testimonials (see Glossary), ordered by `publishedAt` desc. |
+| FR-WALL-01 | `GET /public/spaces/:slug/wall` shall return `{space: {name, headline}, testimonials: [...], nextCursor}`. `nextCursor` is an opaque string, or `null` on the last page. Unknown, malformed and archived slugs → the same 404. |
+| FR-WALL-02 | It shall include only **public** testimonials (see Glossary), ordered by `publishedAt` desc, then `id` desc. The public condition is written once (`PUBLIC_WHERE` in `testimonials.repo.ts`) and every public read reuses it. |
 | FR-WALL-03 | Each item shall contain exactly: `id, authorName, authorTitle, rating, content, publishedAt`. Built by an explicit allowlist mapper, never by spreading a database row. |
-| FR-WALL-04 | Response headers: `Cache-Control: no-store`, `Access-Control-Allow-Origin: *`, no credentials. |
-| FR-WALL-05 | Pagination: `limit` default 20, max 50. Rate limited per IP *(initial: 120 / min)*. |
+| FR-WALL-04 | Response headers: `Cache-Control: no-store`, `Access-Control-Allow-Origin: *`, no credentials (`Access-Control-Allow-Credentials` is never sent). They are also sent on this route's 404, 422 and 429 responses, so a cross-origin widget can read them. |
+| FR-WALL-05 | Pagination: `limit` default 20, max 50; `cursor` is keyset on `(publishedAt, id)`. A malformed cursor, a bad `limit` or an unknown query key → `422`. A cursor only positions the list inside the Space named by the slug; it can never select rows of another Space or workspace. Rate limited per IP by a limiter that runs before validation and any database access (`429 RATE_LIMITED` with `Retry-After`); the maximum is `WALL_RATE_LIMIT_MAX` (default 120 per minute). |
 | FR-WALL-06 | The page `/w/:slug` shall render this data as text (no HTML injection) in a responsive masonry layout. |
 
 ### 3.7 Embeddable widget (I09)
@@ -228,7 +228,7 @@ Body limit 16 KB. Timestamps ISO 8601 UTC.
 | DELETE | `.../testimonials/:testimonialId` | Owner | FR-INB-08 |
 | GET | `/public/spaces/:slug/form` | Public | FR-COL-01 |
 | POST | `/public/spaces/:slug/testimonials` | Public, same-origin, rate limited | FR-COL-02..07 |
-| GET | `/public/spaces/:slug/wall` | Public, CORS `*`, rate limited | FR-WALL-01..05 |
+| GET | `/public/spaces/:slug/wall?limit&cursor` | Public, CORS `*`, rate limited; 404 / 422 / 429 | FR-WALL-01..05 |
 
 Request/response Zod schemas live in `packages/shared/src/contracts/` and are used by both
 the API (validation) and the web app (types).

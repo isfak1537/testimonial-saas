@@ -1,4 +1,4 @@
-import type { CreateSpaceBody, UpdateSpaceBody } from "@testimonial-saas/shared";
+import { SLUG_PATTERN, type CreateSpaceBody, type UpdateSpaceBody } from "@testimonial-saas/shared";
 import type { Db } from "../../db/types.js";
 import { afterCursor } from "../../http/pagination.js";
 
@@ -61,6 +61,8 @@ export async function archiveActiveSpace(
  * Archived Spaces are invisible. Returns the fields the public flow needs, nothing else.
  */
 export function findActiveSpaceBySlug(db: Db, slug: string) {
+  // Anything that cannot be a slug is a 404 without a query (a NUL byte would be a Postgres error).
+  if (!SLUG_PATTERN.test(slug)) return Promise.resolve(null);
   return db.space.findFirst({
     where: { slug, archivedAt: null },
     select: {

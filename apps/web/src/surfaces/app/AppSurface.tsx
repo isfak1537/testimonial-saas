@@ -8,6 +8,7 @@ import SpaceLayout from "./SpaceLayout";
 import SpaceSettingsPage from "./SpaceSettingsPage";
 import SpacesListPage from "./SpacesListPage";
 import { TabPlaceholder } from "./TabPlaceholder";
+import WallTab from "./WallTab";
 import "./app.css";
 
 export default function AppSurface() {
@@ -21,7 +22,7 @@ export default function AppSurface() {
             <Route index element={<Navigate to="inbox" replace />} />
             <Route path="inbox" element={<InboxTab />} />
             <Route path="collection" element={<CollectionTab />} />
-            <Route path="wall" element={<TabPlaceholder title="Wall" />} />
+            <Route path="wall" element={<WallTab />} />
             <Route path="embed" element={<TabPlaceholder title="Embed" />} />
             <Route path="settings" element={<SpaceSettingsPage />} />
           </Route>

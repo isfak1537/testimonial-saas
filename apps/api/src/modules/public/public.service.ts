@@ -2,13 +2,19 @@ import {
   CURRENT_CONSENT_VERSION,
   type PublicFormDto,
   type SubmissionReceipt,
+  type PublicWallDto,
   type SubmitTestimonialBody,
+  type WallQuery,
 } from "@testimonial-saas/shared";
 import type { Db } from "../../db/types.js";
 import { AppError, notFound } from "../../http/errors.js";
 import { findActiveSpaceBySlug } from "../spaces/spaces.repo.js";
-import { createPendingTestimonial } from "../testimonials/testimonials.repo.js";
-import { toPublicForm } from "./public.mappers.js";
+import { toPage } from "../../http/pagination.js";
+import {
+  createPendingTestimonial,
+  listPublicTestimonials,
+} from "../testimonials/testimonials.repo.js";
+import { publishedAtOf, toPublicForm, toPublicWall } from "./public.mappers.js";
 
 export function createPublicService(db: Db) {
   return {
@@ -17,6 +23,18 @@ export function createPublicService(db: Db) {
       const space = await findActiveSpaceBySlug(db, slug);
       if (!space) throw notFound();
       return toPublicForm(space);
+    },
+
+    /** FR-WALL-01..03. Unknown, malformed and archived slugs are the same 404. */
+    async getWall(slug: string, query: WallQuery): Promise<PublicWallDto> {
+      const space = await findActiveSpaceBySlug(db, slug);
+      if (!space) throw notFound();
+      const rows = await listPublicTestimonials(db, space.workspaceId, space.id, query);
+      const { items, nextCursor } = toPage(rows, query.limit, (row) => ({
+        createdAt: publishedAtOf(row),
+        id: row.id,
+      }));
+      return toPublicWall(space, items, nextCursor);
     },
 
     /** FR-COL-02..05. Order: 404, honeypot (silent success), consent version (409), store. */

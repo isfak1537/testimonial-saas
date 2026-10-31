@@ -1,0 +1,58 @@
+.wall-page {
+  min-height: 100vh;
+  width: min(100% - 2 * var(--gutter), var(--content-width));
+  margin-inline: auto;
+  padding-block: 2rem 4rem;
+}
+
+.wall-page .muted {
+  color: var(--color-text-muted);
+}
+
+.wall-header {
+  margin-bottom: 1.5rem;
+}
+
+/* Masonry: cards flow down columns; column count follows the viewport width. */
+.wall-grid {
+  column-width: 18rem;
+  column-gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wall-card {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 1.25rem;
+  break-inside: avoid;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.wall-stars {
+  margin: 0;
+  color: var(--color-banner-text);
+  letter-spacing: 0.1em;
+}
+
+.wall-content {
+  margin: 0;
+  /* Keeps the author's line breaks; the text is still plain text. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wall-author {
+  display: grid;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.wall-more {
+  text-align: center;
+}

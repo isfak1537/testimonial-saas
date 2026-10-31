@@ -4,6 +4,7 @@ import { AppError } from "./errors.js";
 
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const SUBMISSION_WINDOW_MS = 10 * 60 * 1000;
+const WALL_WINDOW_MS = 60 * 1000;
 
 /**
  * FR-AUTH-10. One in-memory bucket per IP shared by sign-up and log-in (mount the same
@@ -38,6 +39,21 @@ export function submissionLimiter(max: number): RequestHandler {
       if (retryAfter === undefined)
         res.setHeader("Retry-After", String(SUBMISSION_WINDOW_MS / 1000));
       next(new AppError(429, "RATE_LIMITED", "Too many submissions, try again later"));
+    },
+  });
+}
+
+/** FR-WALL-05. Per-IP bucket for Wall reads, separate from submissions; runs before validation and the database. */
+export function wallLimiter(max: number): RequestHandler {
+  return rateLimit({
+    windowMs: WALL_WINDOW_MS,
+    limit: max,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    handler: (_req, res, next) => {
+      const retryAfter = res.getHeader("Retry-After");
+      if (retryAfter === undefined) res.setHeader("Retry-After", String(WALL_WINDOW_MS / 1000));
+      next(new AppError(429, "RATE_LIMITED", "Too many requests, try again later"));
     },
   });
 }

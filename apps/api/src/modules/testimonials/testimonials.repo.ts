@@ -1,6 +1,6 @@
 import type { ListTestimonialsQuery, ModerationStatus } from "@testimonial-saas/shared";
 import type { Db } from "../../db/types.js";
-import { afterCursor } from "../../http/pagination.js";
+import { afterCursor, afterPublishedCursor } from "../../http/pagination.js";
 
 export interface NewPendingTestimonial {
   authorName: string;
@@ -55,6 +55,44 @@ export function listTestimonials(
       ...afterCursor(opts.cursor),
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: opts.limit + 1,
+  });
+}
+
+/**
+ * The single definition of "public" (SRS Glossary): approved AND published AND consent not
+ * withdrawn AND not deleted AND Space not archived. Every public read spreads this; nothing else
+ * may spell these conditions out.
+ */
+export const PUBLIC_WHERE = {
+  moderationStatus: "APPROVED",
+  publishedAt: { not: null },
+  consentWithdrawnAt: null,
+  deletedAt: null,
+  space: { archivedAt: null },
+} as const;
+
+/**
+ * FR-WALL-02. `workspaceId` and `spaceId` come from the slug lookup, never from the request.
+ * Selects only what the public mapper needs (SEC-06).
+ */
+export function listPublicTestimonials(
+  db: Db,
+  workspaceId: string,
+  spaceId: string,
+  opts: { limit: number; cursor?: string | undefined },
+) {
+  return db.testimonial.findMany({
+    where: { workspaceId, spaceId, ...PUBLIC_WHERE, ...afterPublishedCursor(opts.cursor) },
+    select: {
+      id: true,
+      authorName: true,
+      authorTitle: true,
+      rating: true,
+      content: true,
+      publishedAt: true,
+    },
+    orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
     take: opts.limit + 1,
   });
 }

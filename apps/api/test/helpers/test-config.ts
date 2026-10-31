@@ -13,6 +13,7 @@ export function testConfig(overrides: Partial<AppOptions["config"]> = {}): AppOp
     // High on purpose: only the rate-limit tests use the real default of 10.
     AUTH_RATE_LIMIT_MAX: 1000,
     SUBMISSION_RATE_LIMIT_MAX: 1000,
+    WALL_RATE_LIMIT_MAX: 1000,
     ...overrides,
   };
 }

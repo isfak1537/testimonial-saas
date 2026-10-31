@@ -43,9 +43,36 @@ export function afterCursor(cursor: string | undefined) {
   return { OR: [{ createdAt: { lt: createdAt } }, { createdAt, id: { lt: id } }] };
 }
 
-/** Pass the rows fetched with `take: limit + 1`; trims the extra row and builds `nextCursor`. */
-export function toPage<T extends CursorPosition>(rows: T[], limit: number) {
+/**
+ * Same as `afterCursor` for lists ordered `publishedAt desc, id desc` (the public Wall). The
+ * cursor only moves the position inside a list whose tenant and Space filters are fixed by the
+ * caller, so a cursor from another Space cannot reach that Space's rows.
+ */
+export function afterPublishedCursor(cursor: string | undefined) {
+  if (!cursor) return {};
+  const { createdAt: publishedAt, id } = decodeCursor(cursor);
+  return { OR: [{ publishedAt: { lt: publishedAt } }, { publishedAt, id: { lt: id } }] };
+}
+
+/**
+ * Pass the rows fetched with `take: limit + 1`; trims the extra row and builds `nextCursor`.
+ * Lists ordered by another timestamp (the Wall's `publishedAt`) say so with `position`.
+ */
+export function toPage<T extends CursorPosition>(
+  rows: T[],
+  limit: number,
+): { items: T[]; nextCursor: string | null };
+export function toPage<T>(
+  rows: T[],
+  limit: number,
+  position: (row: T) => CursorPosition,
+): { items: T[]; nextCursor: string | null };
+export function toPage<T>(
+  rows: T[],
+  limit: number,
+  position: (row: T) => CursorPosition = (row) => row as CursorPosition,
+) {
   const items = rows.slice(0, limit);
   const last = items[items.length - 1];
-  return { items, nextCursor: rows.length > limit && last ? encodeCursor(last) : null };
+  return { items, nextCursor: rows.length > limit && last ? encodeCursor(position(last)) : null };
 }

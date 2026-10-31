@@ -7,7 +7,7 @@ import type { PrismaClient } from "./generated/prisma/client.js";
 import { apiNotFound, errorHandler, fallbackErrorHandler } from "./http/error-handler.js";
 import { health } from "./http/health.js";
 import { originCheck } from "./http/origin-check.js";
-import { authLimiter, submissionLimiter } from "./http/rate-limits.js";
+import { authLimiter, submissionLimiter, wallLimiter } from "./http/rate-limits.js";
 import { jsonBody } from "./http/json-body.js";
 import { requestId } from "./http/request-id.js";
 import { requestLogger } from "./http/request-logger.js";
@@ -32,6 +32,7 @@ export interface AppOptions {
     | "SESSION_TTL_DAYS"
     | "AUTH_RATE_LIMIT_MAX"
     | "SUBMISSION_RATE_LIMIT_MAX"
+    | "WALL_RATE_LIMIT_MAX"
   >;
   logger: Logger;
   prisma: PrismaClient;
@@ -58,7 +59,7 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
   app.use(requestId, securityHeaders, requestLogger(logger));
 
   const api = express.Router();
-  // Authenticated JSON must not be cached by proxies; the public Wall will override per FR-WALL-04.
+  // Authenticated JSON must not be cached by proxies; the public Wall sets the same value (FR-WALL-04).
   api.use((_req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
     next();
@@ -89,7 +90,11 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
   // row comes from that lookup, never from the request.
   api.use(
     "/public",
-    publicRoutes(createPublicService(prisma), submissionLimiter(config.SUBMISSION_RATE_LIMIT_MAX)),
+    publicRoutes(
+      createPublicService(prisma),
+      submissionLimiter(config.SUBMISSION_RATE_LIMIT_MAX),
+      wallLimiter(config.WALL_RATE_LIMIT_MAX),
+    ),
   );
   registerRoutes?.(api);
   app.use("/api/v1", api);

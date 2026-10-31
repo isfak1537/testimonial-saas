@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageQuery } from "./spaces.js";
 
 // SRS FR-COL-02. Strict: workspaceId, spaceId, moderationStatus, consent dates, ... give 422.
 export const submitTestimonialBody = z.strictObject({
@@ -15,6 +16,10 @@ export const submitTestimonialBody = z.strictObject({
 
 export type SubmitTestimonialBody = z.infer<typeof submitTestimonialBody>;
 
+// SRS FR-WALL-05: `limit` default 20, max 50; unknown keys give 422.
+export const wallQuery = pageQuery;
+export type WallQuery = z.infer<typeof wallQuery>;
+
 /** Response of `GET /public/spaces/:slug/form` (FR-COL-01). */
 export interface PublicFormDto {
   name: string;
@@ -22,6 +27,23 @@ export interface PublicFormDto {
   message: string;
   prompts: string[];
   consent: { version: string; text: string };
+}
+
+/** One public testimonial (FR-WALL-03). Exactly these keys; the API builds it field by field. */
+export interface PublicWallItemDto {
+  id: string;
+  authorName: string;
+  authorTitle: string | null;
+  rating: number;
+  content: string;
+  publishedAt: string;
+}
+
+/** Response of `GET /public/spaces/:slug/wall` (FR-WALL-01). */
+export interface PublicWallDto {
+  space: { name: string; headline: string };
+  testimonials: PublicWallItemDto[];
+  nextCursor: string | null;
 }
 
 /** Same body for stored and honeypot submissions, so a bot cannot tell them apart. */

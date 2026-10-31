@@ -59,6 +59,13 @@ describe("loadConfig auth settings", () => {
   });
 });
 
+describe("loadConfig wall limit", () => {
+  it("defaults to 120 and is bounded", () => {
+    expect(loadConfig({}).WALL_RATE_LIMIT_MAX).toBe(120);
+    expect(() => loadConfig({ WALL_RATE_LIMIT_MAX: "0" })).toThrow(/WALL_RATE_LIMIT_MAX/);
+  });
+});
+
 describe("loadConfig submission limit", () => {
   it("is configurable and bounded", () => {
     expect(loadConfig({ SUBMISSION_RATE_LIMIT_MAX: "1000" }).SUBMISSION_RATE_LIMIT_MAX).toBe(1000);
