@@ -246,10 +246,10 @@ that has hostile CSS (`* { color: red !important }`).
 
 Acceptance:
 
-- [ ] Widget renders published items; host CSS does not change them; widget CSS does not leak out
-- [ ] Network failure → nothing visible, no console errors thrown to the host
-- [ ] XSS payload renders as text
-- [ ] Size check still < 30 KB gzipped
+- [x] Widget renders published items; host CSS does not change them; widget CSS does not leak out
+- [x] Network failure → nothing visible, no console errors thrown to the host
+- [x] XSS payload renders as text
+- [x] Size check still < 30 KB gzipped
 
 ---
 

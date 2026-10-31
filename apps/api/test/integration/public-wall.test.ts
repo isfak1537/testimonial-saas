@@ -374,6 +374,7 @@ describe("headers (FR-WALL-04)", () => {
     expect(res.status).toBe(status);
     expect(res.headers["access-control-allow-origin"]).toBe("*");
     expect(res.headers["access-control-allow-credentials"]).toBeUndefined();
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
     expect(res.headers["cache-control"]).toBe("no-store");
     expect(res.headers["x-content-type-options"]).toBe("nosniff");
     expect(res.headers["content-type"]).toMatch(/^application\/json/);
@@ -401,6 +402,7 @@ describe("rate limit (FR-WALL-05)", () => {
     expect(res.body.error.code).toBe("RATE_LIMITED");
     expect(res.headers["retry-after"]).toBeDefined();
     expect(res.headers["access-control-allow-origin"]).toBe("*");
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
     // The collection form is not on the Wall bucket.
     expect((await request(limited.app).get("/api/v1/public/spaces/acme/form")).status).toBe(200);
   });

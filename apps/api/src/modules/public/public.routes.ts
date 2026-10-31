@@ -22,6 +22,7 @@ export function publicRoutes(
     "/spaces/:slug/wall",
     (_req, res, next) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       res.setHeader("Cache-Control", "no-store");
       next();
     },

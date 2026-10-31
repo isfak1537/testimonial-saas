@@ -88,7 +88,8 @@ packages/shared/src/
   contracts/             Zod schemas + inferred types: auth.ts, spaces.ts, testimonials.ts, public.ts, errors.ts
 
 packages/widget/src/
-  index.ts               finds containers, mounts (exists)
+  index.ts               finds containers, mounts once each
+  options.ts             data-attribute parsing (theme, limit, slug)
   api.ts                 fetch Wall JSON from the script's origin
   render.ts              DOM building with textContent only
   styles.ts              CSS string for the Shadow root (light/dark)
