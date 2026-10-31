@@ -36,9 +36,15 @@ e2e               Playwright end-to-end tests
 ## Getting started
 
 ```sh
-pnpm install
 docker compose up -d --build --wait   # db + api on http://localhost:3000
 ```
+
+Running the demo needs only Docker: the image installs dependencies and builds everything
+itself (`Dockerfile`), and applies database migrations on start. Run `pnpm install` on the host
+only for development, the tests and `pnpm verify`.
+
+To stop the stack run `docker compose down`. It keeps the database data. `docker compose down -v`
+also deletes the database data, so use it only when you want a reset.
 
 No `.env` is required: every setting has a local development default. To override values,
 copy `.env.example` to `.env`. Host ports are bound to `127.0.0.1`. The database ports
@@ -86,9 +92,23 @@ Start the stack (see Getting started), open http://localhost:3000, then:
    10 minutes per IP; that is by design.)
 3. **Review.** Back in the dashboard, open the Inbox: the item is Pending. Approve it, then Publish it.
 4. **Wall.** Open `/w/acme`: the testimonial is there.
-5. **Widget.** In the Embed tab copy the snippet into any HTML page served from any origin
-   (for example a local `index.html` opened through `python3 -m http.server`) and open it:
-   the same testimonial appears.
+5. **Widget.** Copy the snippet from the Embed tab, then serve it from a different origin:
+   - Create an empty folder outside this repository, for example `~/embed-test`.
+   - In it, create `index.html` with the snippet in the body (your snippet has your Space slug):
+     ```html
+     <!doctype html>
+     <html>
+       <body>
+         <div data-testimonial-widget data-space="acme" data-theme="light"></div>
+         <script async src="http://localhost:3000/embed/widget.v1.js"></script>
+       </body>
+     </html>
+     ```
+   - In that folder run `python3 -m http.server 8000` and open http://localhost:8000.
+
+   The page (port 8000) and the API (port 3000) are different origins, which is the point of
+   the test. The same testimonial appears. Stop the server with Ctrl+C.
+
 6. **Unpublish** it in the Inbox and refresh the Wall: it is gone.
 7. **Isolation.** Sign up as a second user (another browser profile): they see none of the
    first user's Spaces or testimonials.
