@@ -3,6 +3,8 @@ import type { PrismaClient } from "../../src/generated/prisma/client.js";
 
 type SpaceOverrides = Partial<{ slug: string; name: string; archivedAt: Date | null }>;
 type TestimonialOverrides = Partial<{
+  authorName: string;
+  authorTitle: string | null;
   authorEmail: string | null;
   content: string;
   rating: number;
@@ -10,6 +12,7 @@ type TestimonialOverrides = Partial<{
   publishedAt: Date | null;
   consentWithdrawnAt: Date | null;
   deletedAt: Date | null;
+  createdAt: Date;
 }>;
 
 /** A user with a workspace and an OWNER membership, as sign-up will create them. */
@@ -52,7 +55,8 @@ export function createTestimonial(
     data: {
       workspaceId,
       spaceId,
-      authorName: "Ada Customer",
+      authorName: o.authorName ?? "Ada Customer",
+      authorTitle: o.authorTitle ?? null,
       authorEmail: o.authorEmail ?? null,
       rating: o.rating ?? 5,
       content: o.content ?? "Great product, would recommend.",
@@ -62,6 +66,7 @@ export function createTestimonial(
       consentGrantedAt: new Date(),
       consentWithdrawnAt: o.consentWithdrawnAt ?? null,
       deletedAt: o.deletedAt ?? null,
+      ...(o.createdAt ? { createdAt: o.createdAt } : {}),
     },
   });
 }

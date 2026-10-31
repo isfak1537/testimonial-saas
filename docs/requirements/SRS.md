@@ -76,13 +76,13 @@ points to tune, not measured facts.
 
 | ID | Requirement |
 |---|---|
-| FR-COL-01 | `GET /public/spaces/:slug/form` shall return only: Space name, headline, message, prompts, and the current consent `{version, text}`. Archived or unknown → 404. |
-| FR-COL-02 | `POST /public/spaces/:slug/testimonials` shall accept: authorName (1–80), authorTitle (0–120, optional), authorEmail (optional, valid email, max 254), rating (integer 1–5), content (10–2000 after trimming), consent (must be `true`), consentVersion, website (honeypot). |
+| FR-COL-01 | `GET /public/spaces/:slug/form` shall return only: Space name, headline, message, prompts, and the current consent `{version, text}`. The `text` is rendered with the Space name; the SHA-256 pin (FR-COL-08) covers the unrendered template. Archived, unknown or malformed slug → the same 404. |
+| FR-COL-02 | `POST /public/spaces/:slug/testimonials` shall accept: authorName (1–80), authorTitle (0–120, optional), authorEmail (optional, valid email, max 254), rating (integer 1–5), content (10–2000 after trimming), consent (must be `true`), consentVersion, website (honeypot, ≤200 chars). The body is strict: unknown or server-owned keys (`workspaceId`, `spaceId`, `moderationStatus`, `publishedAt`, consent dates, ids) → 422. A blank authorTitle is stored as null; authorEmail is omitted or valid. Success is `201 {status:"received"}`. |
 | FR-COL-03 | If `consentVersion` differs from the current version → `409 CONSENT_VERSION_OUTDATED` (UI asks the visitor to reload). |
-| FR-COL-04 | If the honeypot `website` is non-empty, the API shall return 201 and store nothing. |
+| FR-COL-04 | If the honeypot `website` is non-empty, the API shall return the same 201 body as a real submission and store nothing. Evaluation order: validation (422) → Space lookup (404) → honeypot → consent version (409) → store. |
 | FR-COL-05 | A stored testimonial shall have `moderationStatus = PENDING`, `publishedAt = NULL`, `consentVersion` = submitted version, `consentGrantedAt = now()`. |
 | FR-COL-06 | Invalid input → `422 VALIDATION_FAILED` with field errors; nothing is stored. |
-| FR-COL-07 | Submissions shall be rate limited per IP *(initial: 5 / 10 min)* and require a same-origin `Origin` header. |
+| FR-COL-07 | Submissions shall be rate limited per IP by a limiter that runs before validation and any database access (honeypot hits and invalid bodies spend budget; `429 RATE_LIMITED` with `Retry-After`). The maximum is `SUBMISSION_RATE_LIMIT_MAX` (default 5 per 10 minutes) and is raised only in test and E2E configuration. The form `GET` is not limited. Submissions also require the `Origin` header of SEC-02. |
 | FR-COL-08 | The consent text and version shall live in `packages/shared/src/consent.ts`. A unit test shall pin the SHA-256 of each released version's text so a version's wording can never change silently. |
 
 Consent text v1 (`2026-10-30.v1`):
@@ -93,26 +93,26 @@ Consent text v1 (`2026-10-30.v1`):
 
 | ID | Requirement |
 |---|---|
-| FR-INB-01 | Owner shall list a Space's testimonials, excluding deleted ones, newest first, with filters `status` (`pending`/`approved`/`rejected`) and `published` (`true`/`false`). |
+| FR-INB-01 | Owner shall list a Space's testimonials, excluding deleted ones, newest first (`createdAt` desc, `id` desc), with filters `status` (`pending`/`approved`/`rejected`) and `published` (`true`/`false`). |
 | FR-INB-02 | The list shall use cursor pagination: `limit` default 20, max 50; response includes `nextCursor` or `null`. |
-| FR-INB-03 | Owner shall view a testimonial's full detail, including private `authorEmail`. |
-| FR-INB-04 | Allowed transitions: PENDING→APPROVED, PENDING→REJECTED, APPROVED→REJECTED, REJECTED→APPROVED. Others → `409 INVALID_STATE`. Approving an already approved item is a 200 no-op. |
+| FR-INB-03 | Owner shall view a testimonial's full detail, including private `authorEmail`. List items omit `authorEmail`. Action endpoints take no body (an empty `{}` is accepted; any key gives `422`) and return the detail DTO; `DELETE` returns `204`. |
+| FR-INB-04 | Allowed transitions: PENDING→APPROVED, PENDING→REJECTED, APPROVED→REJECTED, REJECTED→APPROVED. Others → `409 INVALID_STATE`. Approving an already approved item is a 200 no-op. A testimonial whose consent was withdrawn cannot be approved (`409 INVALID_STATE`); it can still be rejected. In an archived Space approve, reject, publish and unpublish return `409 INVALID_STATE` (withdraw-consent and delete still work). |
 | FR-INB-05 | Rejecting a published testimonial shall also set `publishedAt = NULL` in the same transaction. |
-| FR-INB-06 | Publish shall succeed only if APPROVED, consent not withdrawn and not deleted; otherwise `409 INVALID_STATE`. Publish and unpublish are idempotent. |
-| FR-INB-07 | Withdraw consent shall set `consentWithdrawnAt = now()` and `publishedAt = NULL` in one transaction. It is irreversible; such an item can never be published again. |
-| FR-INB-08 | Delete shall set `deletedAt = now()` and `publishedAt = NULL` (soft delete). Deleted items disappear from all lists and public output. |
+| FR-INB-06 | Publish shall succeed only if APPROVED, consent not withdrawn and not deleted; otherwise `409 INVALID_STATE`. Publish and unpublish are idempotent (a repeated call is a 200 that changes nothing). Each transition is applied only if the row still satisfies its precondition, so a concurrent change gives `409 INVALID_STATE`, never an invalid row. |
+| FR-INB-07 | Withdraw consent shall set `consentWithdrawnAt = now()` and `publishedAt = NULL` in one transaction. It is irreversible; such an item can never be published again. Repeating it is a 200 that keeps the first timestamp. |
+| FR-INB-08 | Delete shall set `deletedAt = now()` and `publishedAt = NULL` (soft delete). Deleted items disappear from all lists and public output; detail and every action on a deleted item return `404 NOT_FOUND`. |
 | FR-INB-09 | The owner shall not be able to edit authorName, authorTitle, rating, content or consent fields (PRD D10). No endpoint exists for it. |
-| FR-INB-10 | Approve, reject, publish, unpublish, withdraw-consent and delete shall each write an `AuditLog` row in the same transaction. |
+| FR-INB-10 | Approve, reject, publish, unpublish, withdraw-consent and delete shall each write one `AuditLog` row in the same transaction when they change something. A repeated call that changes nothing (200 no-op) and a refused call (409) write none. `workspaceId` and `actorUserId` come from the verified membership; `metadata` is `{spaceId, from, to}` and holds no personal data. |
 
 ### 3.6 Public Wall (I08)
 
 | ID | Requirement |
 |---|---|
-| FR-WALL-01 | `GET /public/spaces/:slug/wall` shall return `{space: {name, headline}, testimonials: [...], nextCursor}`. |
-| FR-WALL-02 | It shall include only **public** testimonials (see Glossary), ordered by `publishedAt` desc. |
+| FR-WALL-01 | `GET /public/spaces/:slug/wall` shall return `{space: {name, headline}, testimonials: [...], nextCursor}`. `nextCursor` is an opaque string, or `null` on the last page. Unknown, malformed and archived slugs → the same 404. |
+| FR-WALL-02 | It shall include only **public** testimonials (see Glossary), ordered by `publishedAt` desc, then `id` desc. The public condition is written once (`PUBLIC_WHERE` in `testimonials.repo.ts`) and every public read reuses it. |
 | FR-WALL-03 | Each item shall contain exactly: `id, authorName, authorTitle, rating, content, publishedAt`. Built by an explicit allowlist mapper, never by spreading a database row. |
-| FR-WALL-04 | Response headers: `Cache-Control: no-store`, `Access-Control-Allow-Origin: *`, no credentials. |
-| FR-WALL-05 | Pagination: `limit` default 20, max 50. Rate limited per IP *(initial: 120 / min)*. |
+| FR-WALL-04 | Response headers: `Cache-Control: no-store`, `Access-Control-Allow-Origin: *`, no credentials (`Access-Control-Allow-Credentials` is never sent). They are also sent on this route's 404, 422 and 429 responses, so a cross-origin widget can read them. |
+| FR-WALL-05 | Pagination: `limit` default 20, max 50; `cursor` is keyset on `(publishedAt, id)`. A malformed cursor, a bad `limit` or an unknown query key → `422`. A cursor only positions the list inside the Space named by the slug; it can never select rows of another Space or workspace. Rate limited per IP by a limiter that runs before validation and any database access (`429 RATE_LIMITED` with `Retry-After`); the maximum is `WALL_RATE_LIMIT_MAX` (default 120 per minute). |
 | FR-WALL-06 | The page `/w/:slug` shall render this data as text (no HTML injection) in a responsive masonry layout. |
 
 ### 3.7 Embeddable widget (I09)
@@ -195,7 +195,7 @@ Body limit 16 KB. Timestamps ISO 8601 UTC.
 
 | Status | Code | When |
 |---|---|---|
-| 400 | `BAD_REQUEST` | Malformed JSON, wrong content type |
+| 400 | `BAD_REQUEST` | Malformed JSON, wrong content type, request body over 16 KB (never 413) |
 | 401 | `UNAUTHENTICATED` / `INVALID_CREDENTIALS` | No/expired session; bad login |
 | 403 | `FORBIDDEN` | Member without required role; failed Origin check |
 | 404 | `NOT_FOUND` | Missing, or not in the caller's tenant |
@@ -228,7 +228,7 @@ Body limit 16 KB. Timestamps ISO 8601 UTC.
 | DELETE | `.../testimonials/:testimonialId` | Owner | FR-INB-08 |
 | GET | `/public/spaces/:slug/form` | Public | FR-COL-01 |
 | POST | `/public/spaces/:slug/testimonials` | Public, same-origin, rate limited | FR-COL-02..07 |
-| GET | `/public/spaces/:slug/wall` | Public, CORS `*`, rate limited | FR-WALL-01..05 |
+| GET | `/public/spaces/:slug/wall?limit&cursor` | Public, CORS `*`, rate limited; 404 / 422 / 429 | FR-WALL-01..05 |
 
 Request/response Zod schemas live in `packages/shared/src/contracts/` and are used by both
 the API (validation) and the web app (types).

@@ -19,3 +19,25 @@ export type {
   SpaceListResponse,
   UpdateSpaceBody,
 } from "./contracts/spaces.js";
+export { CONSENT_TEMPLATES, CURRENT_CONSENT_VERSION, renderConsentText } from "./consent.js";
+export { submitTestimonialBody, wallQuery } from "./contracts/public.js";
+export type {
+  PublicFormDto,
+  PublicWallDto,
+  PublicWallItemDto,
+  SubmissionReceipt,
+  SubmitTestimonialBody,
+  WallQuery,
+} from "./contracts/public.js";
+export {
+  listTestimonialsQuery,
+  MODERATION_STATUSES,
+  testimonialActionBody,
+} from "./contracts/testimonials.js";
+export type {
+  ListTestimonialsQuery,
+  ModerationStatus,
+  TestimonialDto,
+  TestimonialListItemDto,
+  TestimonialListResponse,
+} from "./contracts/testimonials.js";

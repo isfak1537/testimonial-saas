@@ -276,6 +276,11 @@ Acceptance:
 Needs owner decisions first: hosting provider, managed Postgres, domain, `APP_ORIGIN`,
 `TRUST_PROXY_HOPS`, backups. Do not start without a written plan approved by the owner.
 
+Acceptance (added after I06):
+
+- [ ] `trust proxy` is configured for the deployment (exact hop count, SEC-07) and the per-IP
+      limiters (auth and public submission) are verified behind it: two clients get separate buckets
+
 ## Later backlog (not scheduled)
 
 Analytics (no cookies, no stored IPs), tags and search, featured + manual order, carousel

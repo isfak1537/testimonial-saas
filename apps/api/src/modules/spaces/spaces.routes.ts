@@ -11,6 +11,8 @@ import { z } from "zod";
 import { notFound } from "../../http/errors.js";
 import { getTenant } from "../../http/member-context.js";
 import { validate } from "../../http/validate.js";
+import type { TestimonialsService } from "../testimonials/testimonials.service.js";
+import { testimonialsRoutes } from "../testimonials/testimonials.routes.js";
 import type { SpacesService } from "./spaces.service.js";
 
 const uuid = z.uuid();
@@ -25,8 +27,10 @@ function spaceId(req: Request): string {
   return id;
 }
 
-export function spacesRoutes(spaces: SpacesService): Router {
+export function spacesRoutes(spaces: SpacesService, testimonials: TestimonialsService): Router {
   const router = Router({ mergeParams: true });
+  // Nested here so testimonial routes stay on the shared `tenant` router (§3.2).
+  router.use("/:spaceId/testimonials", testimonialsRoutes(testimonials));
 
   router.get("/", validate({ query: listSpacesQuery }), async (_req, res) => {
     const { query } = res.locals["validated"] as { query: ListSpacesQuery };

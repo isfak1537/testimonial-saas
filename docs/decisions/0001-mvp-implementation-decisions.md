@@ -75,7 +75,7 @@ Found in the I02 security review; each is scheduled in the increment named.
   or use an exempt limiter. The Docker healthcheck must never receive 429.
 - **I04 (done):** `Space.prompts` is nullable in the database (Prisma lists are). The Space mapper
   returns `[]` for `null`.
-- **I07:** audit writers take `workspaceId` from the verified membership, never from input.
+- **I07 (done, `modules/audit/audit.repo.ts`):** audit writers take `workspaceId` from the verified membership, never from input.
 - **I11:** use a separate migrator database role. Today the container runs migrations with the
   application's credentials.
 - **I10:** purge expired `Session` rows. I03 rejects them on read but never deletes them.
@@ -92,3 +92,12 @@ Found in the I02 security review; each is scheduled in the increment named.
   the web bundle (the web app imports only `PRODUCT_NAME`). Do not remove it.
 - **Config (I03):** in production `APP_ORIGIN` must be https unless the host is `localhost` or
   `127.0.0.1`, so a mistyped http origin cannot yield a non-Secure session cookie.
+- **I06 (accepted limitation):** the consent text embeds the Space name, but a testimonial stores only
+  `consentVersion` (the template version). If the owner later renames the Space, the text a visitor
+  agreed to can no longer be reproduced exactly. Storing the rendered text or the Space name at
+  submission time is a schema change, deferred; revisit before any claim that consent is auditable.
+- **I10:** spam defence in I06 is the honeypot plus the per-IP limiter only (5 per 10 minutes). Stronger
+  measures (CAPTCHA or proof of work, per-Space limits, email verification, moderation hints) belong to I10.
+- **I10:** the `website` honeypot can be filled by browser autofill or password managers. A real visitor
+  then gets a silent "Thank you" and nothing is stored. Fix: rename the field (an SRS FR-COL-02
+  contract change) and add a time-to-submit check.

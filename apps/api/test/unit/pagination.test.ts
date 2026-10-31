@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { AppError } from "../../src/http/errors.js";
-import { afterCursor, decodeCursor, encodeCursor, toPage } from "../../src/http/pagination.js";
+import {
+  afterCursor,
+  afterPublishedCursor,
+  decodeCursor,
+  encodeCursor,
+  toPage,
+} from "../../src/http/pagination.js";
 
 const row = (n: number) => ({
   createdAt: new Date(Date.UTC(2026, 9, 30, 12, 0, n)),
@@ -48,5 +54,35 @@ describe("toPage", () => {
     const page = toPage([row(3), row(2), row(1)], 2);
     expect(page.items).toEqual([row(3), row(2)]);
     expect(decodeCursor(page.nextCursor ?? "")).toEqual(row(2));
+  });
+});
+
+describe("published cursor", () => {
+  it("adds no filter without a cursor", () => {
+    expect(afterPublishedCursor(undefined)).toEqual({});
+  });
+
+  it("filters on publishedAt and breaks ties by id", () => {
+    const pos = row(2);
+    expect(afterPublishedCursor(encodeCursor(pos))).toEqual({
+      OR: [
+        { publishedAt: { lt: pos.createdAt } },
+        { publishedAt: pos.createdAt, id: { lt: pos.id } },
+      ],
+    });
+  });
+
+  it("rejects a bad cursor with 422", () => {
+    expect(() => afterPublishedCursor("!!!")).toThrow(AppError);
+  });
+
+  it("toPage builds the cursor from a custom position", () => {
+    const rows = [row(3), row(2), row(1)].map((r) => ({ id: r.id, publishedAt: r.createdAt }));
+    const page = toPage(rows, 2, (r) => ({ createdAt: r.publishedAt, id: r.id }));
+    expect(page.items).toHaveLength(2);
+    expect(decodeCursor(page.nextCursor!)).toEqual({
+      createdAt: rows[1]!.publishedAt,
+      id: rows[1]!.id,
+    });
   });
 });

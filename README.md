@@ -46,7 +46,9 @@ copy `.env.example` to `.env`. Host ports are bound to `127.0.0.1`. The database
 default to 54320 (dev) and 54330 (test) so they do not clash with a local Postgres on 5432.
 
 For frontend development with hot reload, run `pnpm -F @testimonial-saas/web dev`
-(Vite proxies `/api` and `/embed` to the API on port 3000).
+(Vite serves http://localhost:5173 and proxies `/api` and `/embed` to the API on port 3000).
+The API checks the `Origin` header on writes, so start it with `APP_ORIGIN=http://localhost:5173`
+when you use the Vite dev server (set it in `.env`, then `docker compose up -d --build --wait`).
 
 ## Commands
 
