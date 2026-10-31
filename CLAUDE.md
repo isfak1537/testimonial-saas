@@ -68,6 +68,14 @@ Plan → Implement → Verify → Review → Owner approval.
 - Stage explicit paths only. Never `git add .` or `git add -A`.
 - Commit message: `feat(i0X): <summary>` referencing SRS IDs in the body.
 
+## Hooks
+
+`.claude/settings.json` registers a `PreToolUse` hook on Bash (`.claude/hooks/guard-git-add.mjs`). It blocks `git add` (or `git stage`) with `-A`, `--all`, `-u`, `--update` or `.`, and of any file whose name starts with `.env` (except `.env.example`) or ends in `.docx`. The reason is shown so you can retry with explicit paths. It enforces the Git rules above; it does not replace them.
+
+- Guardrail, not a security boundary. Known limits: `git commit -a` / `-am` and `git add -p` bypass the explicit-paths rule (not blocked); variable expansion, aliases, `bash -c`, globs (`git add *`, `.env*`), other spellings of "everything" (`..`, `$PWD`, `:/`, `--pathspec-from-file`, a whole directory) and unusual quoting/heredocs are not inspected. It fails open on any error.
+- Test: `pnpm test:hooks` (also part of `pnpm verify`). See it fire: `/hooks`, or the Ctrl+O transcript.
+- Turn off: set `"disableAllHooks": true` in a settings file (this disables all hooks), or for one run `claude --settings '{"disableAllHooks": true}'`.
+
 ## Completion report
 
 1. Increment ID and goal
