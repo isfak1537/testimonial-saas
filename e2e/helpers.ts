@@ -31,7 +31,9 @@ export async function createSpaceViaUi(page: Page, name: string, slug: string) {
 /** Unique, valid, non-reserved slug. */
 export function uniqueSlug(prefix = "sp"): string {
   counter += 1;
-  return `${prefix}-${Date.now().toString(36)}-${counter}`;
+  // The counter restarts in every Playwright worker, so the worker's pid keeps slugs generated in
+  // the same millisecond by parallel workers apart (uniqueEmail does the same).
+  return `${prefix}-${Date.now().toString(36)}-${process.pid.toString(36)}-${counter}`;
 }
 
 /** Direct API calls share the page's cookies; writes must carry the app's Origin. */

@@ -13,6 +13,7 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "purge:deleted": "node dist/scripts/purge-deleted.js",
     "toolchain:check": "node dist/toolchain-check.js"
   },
   "dependencies": {

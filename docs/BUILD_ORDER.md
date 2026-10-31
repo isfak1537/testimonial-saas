@@ -281,6 +281,9 @@ Acceptance (added after I06):
 - [ ] `trust proxy` is configured for the deployment (exact hop count, SEC-07) and the per-IP
       limiters (auth and public submission) are verified behind it: two clients get separate buckets
 
+- [ ] HSTS (`Strict-Transport-Security`, an I01 follow-up) is added once HTTPS is terminated for the deployment, with a test
+- [ ] `GET /public/spaces/:slug/form` has no limiter today; review all per-IP limiters (form, Wall, submission, auth) together with the proxy decision
+
 ## Later backlog (not scheduled)
 
 Analytics (no cookies, no stored IPs), tags and search, featured + manual order, carousel

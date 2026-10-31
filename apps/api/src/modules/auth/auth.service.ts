@@ -47,8 +47,8 @@ export function createAuthService(prisma: PrismaClient, config: AuthConfig) {
   }
 
   return {
-    /** FR-AUTH-01..03, 06, 07. */
-    async signup(input: SignupBody): Promise<AuthResult> {
+    /** FR-AUTH-01..03, 06, 07. `currentToken` is the caller's existing cookie, if any. */
+    async signup(input: SignupBody, currentToken?: string): Promise<AuthResult> {
       const passwordHash = await hashPassword(input.password);
       let created;
       try {
@@ -66,7 +66,11 @@ export function createAuthService(prisma: PrismaClient, config: AuthConfig) {
         if (isEmailUniqueViolation(error)) throw emailTaken();
         throw error;
       }
-      const token = await startSession(prisma, created.user.id);
+      // Only after the account exists: a rejected sign-up (409, 422) keeps the caller's session.
+      const token = await prisma.$transaction(async (tx) => {
+        if (currentToken) await sessions.deleteSessionByTokenHash(tx, hashToken(currentToken));
+        return startSession(tx, created.user.id);
+      });
       return { me: toMe({ ...created, role: "OWNER" }), token };
     },
 

@@ -66,7 +66,8 @@ apps/api/src/
     public/              public.routes.ts, public.service.ts, public.mappers.ts
     audit/               audit.repo.ts
   scripts/
-    purge-deleted.ts
+    purge.ts             counts + deletes (testimonials deleted > 30 days ago, expired sessions)
+    purge-deleted.ts     CLI: dry-run by default, --confirm to delete (FR-OPS-01)
 apps/api/test/
   helpers/               test-db.ts (migrate + truncate), factories.ts, test-config.ts, auth-app.ts (app + captured logs, signup/cookie helpers)
   unit/                  no database

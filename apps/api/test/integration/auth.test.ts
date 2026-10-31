@@ -84,6 +84,26 @@ describe("POST /auth/signup (FR-AUTH-01..03, 06, 07)", () => {
     expect((res.headers["set-cookie"] as unknown as string[])[0]).toContain("Secure");
   });
 
+  it("replaces a session the caller already holds (FR-AUTH-06)", async () => {
+    const { token: first } = await signup();
+    const res = await withCookie(post(app, "/api/v1/auth/signup"), first!).send(
+      signupBody({ email: "grace@example.com", displayName: "Grace" }),
+    );
+    const second = sessionToken(res)!;
+    expect(res.status).toBe(201);
+    expect(second).not.toBe(first);
+    expect(await prisma.session.count()).toBe(1);
+    expect((await withCookie(request(app).get("/api/v1/auth/me"), first!)).status).toBe(401);
+    expect((await withCookie(request(app).get("/api/v1/auth/me"), second)).status).toBe(200);
+  });
+
+  it("keeps the caller's session when sign-up is rejected", async () => {
+    const { token: first } = await signup();
+    const res = await withCookie(post(app, "/api/v1/auth/signup"), first!).send(signupBody());
+    expect(res.status).toBe(409);
+    expect((await withCookie(request(app).get("/api/v1/auth/me"), first!)).status).toBe(200);
+  });
+
   it("returns 409 EMAIL_TAKEN with details for a normalised duplicate", async () => {
     await signup();
     const { res } = await signup({ email: " ADA@example.com " });

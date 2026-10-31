@@ -38,5 +38,5 @@
 
 ## Follow-ups
 
-- **I10:** the widget script is cached for 5 minutes with no versioned URL; a breaking change
+- **I10 (documented, ADR 0005):** the widget script is cached for 5 minutes with no versioned URL; a breaking change
   needs a new file name (`widget.v2.js`), not an edit.

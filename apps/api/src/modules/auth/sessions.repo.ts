@@ -22,3 +22,14 @@ export async function deleteSessionByTokenHash(db: Db, tokenHash: string): Promi
 export async function deleteSessionById(db: Db, id: string): Promise<void> {
   await db.session.deleteMany({ where: { id } });
 }
+
+// Maintenance (FR-OPS-01): expired rows are already rejected on read; this only frees the space.
+
+export function countExpiredSessions(db: Db, now: Date): Promise<number> {
+  return db.session.count({ where: { expiresAt: { lt: now } } });
+}
+
+export async function deleteExpiredSessions(db: Db, now: Date): Promise<number> {
+  const { count } = await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
+  return count;
+}
