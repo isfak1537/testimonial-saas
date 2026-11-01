@@ -5,7 +5,7 @@
 
 A multi-tenant app for collecting customer testimonials, reviewing them before they go
 public, and publishing approved ones on a public Wall and an embeddable widget. It is built
-incrementally as a student project; this branch contains the MVP (increments I00–I10).
+incrementally as a student project; `main` contains the MVP (increments I00–I10).
 It is a local demo: there is no production deployment yet.
 
 ## Stack
