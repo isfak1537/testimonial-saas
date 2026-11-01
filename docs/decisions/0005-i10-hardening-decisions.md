@@ -38,3 +38,9 @@
 ## Consequences
 
 - SRS FR-AUTH-06, FR-COL-02, FR-COL-04 and FR-OPS-01 are updated to match.
+
+## Update (1 Nov 2026)
+
+- The `GET /form` limiter listed under Deferred was added in a separate change: `FORM_RATE_LIMIT_MAX`
+  (default 60 per IP per minute, a judgment, not measured). SRS FR-COL-07 was updated. The
+  deferred list above is left as originally accepted.

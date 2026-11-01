@@ -74,3 +74,11 @@ describe("loadConfig submission limit", () => {
     );
   });
 });
+
+describe("loadConfig form limit", () => {
+  it("defaults to 60 and is bounded", () => {
+    expect(loadConfig({}).FORM_RATE_LIMIT_MAX).toBe(60);
+    expect(loadConfig({ FORM_RATE_LIMIT_MAX: "1000" }).FORM_RATE_LIMIT_MAX).toBe(1000);
+    expect(() => loadConfig({ FORM_RATE_LIMIT_MAX: "0" })).toThrow(/FORM_RATE_LIMIT_MAX/);
+  });
+});

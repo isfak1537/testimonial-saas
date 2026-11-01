@@ -13,6 +13,7 @@ export function publicRoutes(
   publicService: PublicService,
   submitLimiter: RequestHandler,
   wallLimiter: RequestHandler,
+  formLimiter: RequestHandler,
 ): Router {
   const router = Router();
 
@@ -34,7 +35,7 @@ export function publicRoutes(
     },
   );
 
-  router.get("/spaces/:slug/form", async (req, res) => {
+  router.get("/spaces/:slug/form", formLimiter, async (req, res) => {
     res.json(await publicService.getForm(String(req.params["slug"])));
   });
 

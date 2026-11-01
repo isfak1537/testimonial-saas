@@ -130,6 +130,7 @@ embeds ships as a new file (`widget.v2.js`); `v1` is never edited incompatibly.
   limiter slows enumeration; it does not prevent it.
 - **Wall requests can return 429** (120 per minute per IP) behind a shared NAT or on a page with
   very many widgets; the widget then shows nothing.
+- **The collection form read is limited** to 60 per minute per IP (`FORM_RATE_LIMIT_MAX`); the default is a judgment, not measured.
 - **No `trust proxy` and no HTTPS yet.** The rate limiters see the socket address and the
   session cookie is `Secure` only when `APP_ORIGIN` is https. Deployment is a later increment.
 - No password reset, email verification, team invites or roles; one owner per workspace.
