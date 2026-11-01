@@ -14,6 +14,7 @@ export function testConfig(overrides: Partial<AppOptions["config"]> = {}): AppOp
     AUTH_RATE_LIMIT_MAX: 1000,
     SUBMISSION_RATE_LIMIT_MAX: 1000,
     WALL_RATE_LIMIT_MAX: 1000,
+    TRUST_PROXY_HOPS: 0,
     ...overrides,
   };
 }

@@ -33,6 +33,7 @@ export interface AppOptions {
     | "AUTH_RATE_LIMIT_MAX"
     | "SUBMISSION_RATE_LIMIT_MAX"
     | "WALL_RATE_LIMIT_MAX"
+    | "TRUST_PROXY_HOPS"
   >;
   logger: Logger;
   prisma: PrismaClient;
@@ -56,6 +57,7 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
   const widgetDistDir = config.WIDGET_DIST_DIR;
   const app = express();
   app.disable("x-powered-by");
+  if (config.TRUST_PROXY_HOPS > 0) app.set("trust proxy", config.TRUST_PROXY_HOPS);
   app.use(requestId, securityHeaders, requestLogger(logger));
 
   const api = express.Router();

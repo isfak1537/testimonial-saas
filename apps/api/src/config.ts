@@ -1,5 +1,6 @@
 import path from "node:path";
 import { z } from "zod";
+import { trustProxyHopsSchema } from "./trust-proxy-hops.js";
 
 const defaultWebDistDir = path.resolve(import.meta.dirname, "../../web/dist");
 const defaultWidgetDistDir = path.resolve(import.meta.dirname, "../../../packages/widget/dist");
@@ -45,6 +46,7 @@ const envSchema = z
     SUBMISSION_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(5),
     // Per IP and minute, for public Wall reads (FR-WALL-05).
     WALL_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(120),
+    TRUST_PROXY_HOPS: trustProxyHopsSchema,
   })
   .refine((env) => env.NODE_ENV !== "production" || env.APP_ORIGIN !== undefined, {
     path: ["APP_ORIGIN"],
