@@ -75,6 +75,42 @@ describe("loadConfig submission limit", () => {
   });
 });
 
+describe("loadConfig TRUST_PROXY_HOPS", () => {
+  it("defaults to 0 (trust nothing)", () => {
+    expect(loadConfig({}).TRUST_PROXY_HOPS).toBe(0);
+  });
+
+  it("accepts a whole number from 0 to 10", () => {
+    for (const [raw, n] of [
+      ["0", 0],
+      ["1", 1],
+      ["10", 10],
+    ] as const) {
+      expect(loadConfig({ TRUST_PROXY_HOPS: raw }).TRUST_PROXY_HOPS).toBe(n);
+    }
+  });
+
+  it("rejects true, *, non-numeric, negative, fractional, empty and too-large values", () => {
+    for (const bad of [
+      "true",
+      "false",
+      "*",
+      "loopback",
+      "10.0.0.1",
+      "-1",
+      "1.5",
+      "1e1",
+      "",
+      " ",
+      "11",
+    ]) {
+      expect(() => loadConfig({ TRUST_PROXY_HOPS: bad }), JSON.stringify(bad)).toThrow(
+        /TRUST_PROXY_HOPS/,
+      );
+    }
+  });
+});
+
 describe("loadConfig form limit", () => {
   it("defaults to 60 and is bounded", () => {
     expect(loadConfig({}).FORM_RATE_LIMIT_MAX).toBe(60);

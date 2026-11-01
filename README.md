@@ -131,10 +131,19 @@ embeds ships as a new file (`widget.v2.js`); `v1` is never edited incompatibly.
 - **Wall requests can return 429** (120 per minute per IP) behind a shared NAT or on a page with
   very many widgets; the widget then shows nothing.
 - **The collection form read is limited** to 60 per minute per IP (`FORM_RATE_LIMIT_MAX`); the default is a judgment, not measured.
-- **No `trust proxy` and no HTTPS yet.** The rate limiters see the socket address and the
-  session cookie is `Secure` only when `APP_ORIGIN` is https. Deployment is a later increment.
+- **No HTTPS yet.** The session cookie is `Secure` only when `APP_ORIGIN` is https.
+  Deployment is a later increment.
 - No password reset, email verification, team invites or roles; one owner per workspace.
 - Rate limiters are in memory, per process.
+- **`TRUST_PROXY_HOPS`** (default `0`, trust nothing) sets Express's `trust proxy` to a hop count
+  so the per-IP limiters see the client address behind a reverse proxy. The number must equal the
+  real number of proxies in front of the API: too low and visitors share the proxy's rate-limit
+  bucket, too high and a client can supply its own address. Only a whole number from 0 to 10 is
+  accepted; `true`, `*` and address lists stop the app at startup. The Express docs
+  (https://expressjs.com/en/guide/behind-proxies.html) warn for a number: "it is important to
+  ensure there are not multiple, different-length paths to the Express application such that the
+  client can be less than the configured number of hops away, otherwise it may be possible for
+  the client to provide any value."
 - The API image keeps dev dependencies so the toolchain check and migrations can run in it.
 - The public pages are a single-page app: content appears after JavaScript loads and is not
   server-rendered for SEO.

@@ -9,7 +9,7 @@ const FORM_WINDOW_MS = 60 * 1000;
 
 /**
  * FR-AUTH-10. One in-memory bucket per IP shared by sign-up and log-in (mount the same
- * instance on both). No `trust proxy` is configured (SEC-07), so the IP is the socket address.
+ * instance on both). The IP is `req.ip`: the socket address unless TRUST_PROXY_HOPS is set (SEC-07).
  */
 export function authLimiter(max: number): RequestHandler {
   return rateLimit({
