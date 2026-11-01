@@ -76,6 +76,14 @@ Plan → Implement → Verify → Review → Owner approval.
 - Test: `pnpm test:hooks` (also part of `pnpm verify`). See it fire: `/hooks`, or the Ctrl+O transcript.
 - Turn off: set `"disableAllHooks": true` in a settings file (this disables all hooks), or for one run `claude --settings '{"disableAllHooks": true}'`.
 
+## Playwright MCP
+
+Project-scoped MCP server (`.mcp.json`, `@playwright/mcp@0.0.83` by Microsoft, pinned) that drives a headless browser to walk the README demo script and take screenshots. Results: `docs/demo-check.md`, images in `docs/screenshots/`.
+
+- Start: needs the local stack up. Exit and restart `claude` in the repo after `.mcp.json` changes, approve the `playwright` server at the prompt, check `/mcp`. Reset the approval with `claude mcp reset-project-choices`.
+- Scope: `--allowed-origins` limits requests to `http://localhost:3000` and `http://localhost:8000`. It is **not a security boundary** (it does not affect redirects). Mitigations: `--isolated` in-memory profile, headless, no extension, no opt-in `--caps`, `mcp__playwright__browser_run_code_unsafe` denied in `.claude/settings.json`.
+- Use fake data only (`example.com` emails, a throwaway password). Visit only the two origins. Only the named PNGs under `docs/screenshots/` are kept; delete other MCP output and any `.playwright-mcp/` folder.
+
 ## Completion report
 
 1. Increment ID and goal
