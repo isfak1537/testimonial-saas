@@ -7,7 +7,7 @@ import type { PrismaClient } from "./generated/prisma/client.js";
 import { apiNotFound, errorHandler, fallbackErrorHandler } from "./http/error-handler.js";
 import { health } from "./http/health.js";
 import { originCheck } from "./http/origin-check.js";
-import { authLimiter, submissionLimiter, wallLimiter } from "./http/rate-limits.js";
+import { authLimiter, formLimiter, submissionLimiter, wallLimiter } from "./http/rate-limits.js";
 import { jsonBody } from "./http/json-body.js";
 import { requestId } from "./http/request-id.js";
 import { requestLogger } from "./http/request-logger.js";
@@ -33,6 +33,7 @@ export interface AppOptions {
     | "AUTH_RATE_LIMIT_MAX"
     | "SUBMISSION_RATE_LIMIT_MAX"
     | "WALL_RATE_LIMIT_MAX"
+    | "FORM_RATE_LIMIT_MAX"
   >;
   logger: Logger;
   prisma: PrismaClient;
@@ -94,6 +95,7 @@ export function createApp({ config, logger, prisma, registerRoutes }: AppOptions
       createPublicService(prisma),
       submissionLimiter(config.SUBMISSION_RATE_LIMIT_MAX),
       wallLimiter(config.WALL_RATE_LIMIT_MAX),
+      formLimiter(config.FORM_RATE_LIMIT_MAX),
     ),
   );
   registerRoutes?.(api);

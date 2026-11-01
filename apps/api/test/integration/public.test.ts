@@ -258,7 +258,7 @@ describe("POST /public/spaces/:slug/testimonials", () => {
 });
 
 describe("submission rate limit (FR-COL-07)", () => {
-  it("allows 5 per IP, then 429 with Retry-After; the form GET is not limited", async () => {
+  it("allows 5 per IP, then 429 with Retry-After; the form GET is on another bucket", async () => {
     const limited = authApp({ SUBMISSION_RATE_LIMIT_MAX: 5 });
     for (let i = 0; i < 5; i += 1) {
       expect((await submit(valid, "acme", limited.app)).status).toBe(201);
@@ -283,5 +283,71 @@ describe("submission rate limit (FR-COL-07)", () => {
     const next = await submit({}, "acme", limited.app);
     expect(next.status).toBe(429);
     expect(await prisma.testimonial.count()).toBe(1);
+  });
+});
+
+describe("form rate limit", () => {
+  const wallUrl = (slug: string) => `/api/v1/public/spaces/${slug}/wall`;
+
+  it("allows the maximum per IP, then 429 with Retry-After", async () => {
+    const limited = authApp({ FORM_RATE_LIMIT_MAX: 3 });
+    for (let i = 0; i < 3; i += 1) {
+      expect((await request(limited.app).get(formUrl("acme"))).status).toBe(200);
+    }
+    const res = await request(limited.app).get(formUrl("acme"));
+    expect(res.status).toBe(429);
+    expect(res.body.error.code).toBe("RATE_LIMITED");
+    expect(Number(res.headers["retry-after"])).toBeGreaterThan(0);
+  });
+
+  it("is separate from the submission and wall limiters, and other routes are unaffected", async () => {
+    const limited = authApp({
+      FORM_RATE_LIMIT_MAX: 2,
+      SUBMISSION_RATE_LIMIT_MAX: 1,
+      WALL_RATE_LIMIT_MAX: 1,
+    });
+    // Exhaust the form bucket.
+    await request(limited.app).get(formUrl("acme"));
+    await request(limited.app).get(formUrl("acme"));
+    expect((await request(limited.app).get(formUrl("acme"))).status).toBe(429);
+    // Submission and wall buckets still have their own budget.
+    expect((await submit(valid, "acme", limited.app)).status).toBe(201);
+    expect((await request(limited.app).get(wallUrl("acme"))).status).toBe(200);
+    expect((await request(limited.app).get("/api/v1/health")).status).toBe(200);
+    // The reverse: spent submission and wall buckets leave the form bucket alone.
+    const fresh = authApp({
+      FORM_RATE_LIMIT_MAX: 2,
+      SUBMISSION_RATE_LIMIT_MAX: 1,
+      WALL_RATE_LIMIT_MAX: 1,
+    });
+    expect((await submit(valid, "acme", fresh.app)).status).toBe(201);
+    expect((await submit(valid, "acme", fresh.app)).status).toBe(429);
+    expect((await request(fresh.app).get(wallUrl("acme"))).status).toBe(200);
+    expect((await request(fresh.app).get(wallUrl("acme"))).status).toBe(429);
+    expect((await request(fresh.app).get(formUrl("acme"))).status).toBe(200);
+  });
+
+  it("does not leak existence: same 404 under budget, same 429 once spent", async () => {
+    const other = await createUserWithWorkspace(prisma);
+    await createSpace(prisma, other.workspace.id, { slug: "other-co" });
+    await createSpace(prisma, workspaceId, { slug: "old-space", archivedAt: new Date() });
+    const limited = authApp({ FORM_RATE_LIMIT_MAX: 6 });
+    const missing = await request(limited.app).get(formUrl("nope-nope"));
+    const archived = await request(limited.app).get(formUrl("old-space"));
+    expect(missing.status).toBe(404);
+    expect(archived.status).toBe(404);
+    expect(archived.body.error.code).toBe(missing.body.error.code);
+    expect(archived.body.error.message).toBe(missing.body.error.message);
+    // Existing slugs in either workspace, and unknown ones, spend the same shared bucket.
+    expect((await request(limited.app).get(formUrl("acme"))).status).toBe(200);
+    expect((await request(limited.app).get(formUrl("other-co"))).status).toBe(200);
+    expect((await request(limited.app).get(formUrl("nope-nope"))).status).toBe(404);
+    expect((await request(limited.app).get(formUrl("acme"))).status).toBe(200);
+    const existing429 = await request(limited.app).get(formUrl("acme"));
+    const unknown429 = await request(limited.app).get(formUrl("nope-nope"));
+    expect(existing429.status).toBe(429);
+    expect(unknown429.status).toBe(429);
+    expect(unknown429.body.error.code).toBe(existing429.body.error.code);
+    expect(unknown429.body.error.message).toBe(existing429.body.error.message);
   });
 });
