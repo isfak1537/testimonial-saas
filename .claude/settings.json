@@ -1,4 +1,7 @@
 {
+  "permissions": {
+    "deny": ["mcp__playwright__browser_run_code_unsafe"]
+  },
   "hooks": {
     "PreToolUse": [
       {
